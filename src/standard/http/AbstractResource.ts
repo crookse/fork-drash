@@ -20,12 +20,12 @@
  */
 
 // Imports > Core
+import { StatusCode } from "../../core/http/response/StatusCode.ts";
+import type { IResource } from "../../core/interfaces/IResource.ts";
 import type { ResourceClass } from "../../core/types/ResourceClass.ts";
-import { IResource } from "../../core/interfaces/IResource.ts";
 
 // Imports > Standard
-import { HTTPResponse } from "./HTTPResponse.ts";
-import { StatusCode } from "./response/StatusCode.ts";
+import { HTTPError } from "../errors/HTTPError.ts";
 import { type Builder, ResourceGroup } from "./ResourceGroup.ts";
 
 type ResourceClasses = (ResourceClass | ResourceClass[])[];
@@ -48,39 +48,39 @@ abstract class AbstractResource implements IResource {
   abstract paths: string[];
 
   public CONNECT(_input: unknown): unknown {
-    throw HTTPResponse.error(StatusCode.NotImplemented);
+    throw new HTTPError(StatusCode.NotImplemented);
   }
 
   public DELETE(_input: unknown): unknown {
-    throw HTTPResponse.error(StatusCode.NotImplemented);
+    throw new HTTPError(StatusCode.NotImplemented);
   }
 
   public GET(_input: unknown): unknown {
-    throw HTTPResponse.error(StatusCode.NotImplemented);
+    throw new HTTPError(StatusCode.NotImplemented);
   }
 
   public HEAD(_input: unknown): unknown {
-    throw HTTPResponse.error(StatusCode.NotImplemented);
+    throw new HTTPError(StatusCode.NotImplemented);
   }
 
   public OPTIONS(_input: unknown): unknown {
-    throw HTTPResponse.error(StatusCode.NotImplemented);
+    throw new HTTPError(StatusCode.NotImplemented);
   }
 
   public PATCH(_input: unknown): unknown {
-    throw HTTPResponse.error(StatusCode.NotImplemented);
+    throw new HTTPError(StatusCode.NotImplemented);
   }
 
   public POST(_input: unknown): unknown {
-    throw HTTPResponse.error(StatusCode.NotImplemented);
+    throw new HTTPError(StatusCode.NotImplemented);
   }
 
   public PUT(_input: unknown): unknown {
-    throw HTTPResponse.error(StatusCode.NotImplemented);
+    throw new HTTPError(StatusCode.NotImplemented);
   }
 
   public TRACE(_input: unknown): unknown {
-    throw HTTPResponse.error(StatusCode.NotImplemented);
+    throw new HTTPError(StatusCode.NotImplemented);
   }
 }
 

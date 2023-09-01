@@ -19,11 +19,13 @@
  * Drash. If not, see <https://www.gnu.org/licenses/>.
  */
 
+// Imports > Core
+import { StatusCode } from "../../core/http/response/StatusCode.ts";
+
 // Imports > Standard
 import { ConsoleLogger, Level } from "../log/ConsoleLogger.ts";
 import { Handler } from "./Handler.ts";
 import { HTTPError } from "../errors/HTTPError.ts";
-import { StatusCode } from "../http/response/StatusCode.ts";
 
 type Input = {
   method: string;

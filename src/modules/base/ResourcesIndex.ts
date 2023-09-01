@@ -22,13 +22,13 @@
 // Imports > Core
 import { IResource } from "../../core/Interfaces.ts";
 import { ConstructorWithArgs } from "../../core/Types.ts";
+import { StatusCode } from "../../core/http/response/StatusCode.ts";
 
 // Imports > Standard
 import { ConsoleLogger, Level } from "../../standard/log/ConsoleLogger.ts";
 import { HTTPError } from "../../standard/errors/HTTPError.ts";
 import { Logger } from "../../standard/log/Logger.ts";
 import { SearchIndex } from "../../standard/handlers/SearchIndex.ts";
-import { StatusCode } from "../../standard/http/response/StatusCode.ts";
 
 // Imports > Modules
 import { ResourceClassesArray } from "./types/ResourceClassesArray.ts";
