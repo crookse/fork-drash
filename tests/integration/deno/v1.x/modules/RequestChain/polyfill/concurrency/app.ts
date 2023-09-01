@@ -13,40 +13,46 @@ class Accounts extends Chain.Resource {
   public GET(request: Request) {
     if (request.headers.get("x-wait-1")) {
       return new Promise((resolve) => {
-          setTimeout(() => {
-            resolve(new Response(
+        setTimeout(() => {
+          resolve(
+            new Response(
               "Waited for x-wait-1!",
-              { status: 200 }
-            ));
+              { status: 200 },
+            ),
+          );
         }, 10000);
       });
     }
 
     if (request.headers.get("x-wait-2")) {
       return new Promise((resolve) => {
-          setTimeout(() => {
-            resolve(new Response(
+        setTimeout(() => {
+          resolve(
+            new Response(
               "Waited for x-wait-2!",
-              { status: 200 }
-            ));
+              { status: 200 },
+            ),
+          );
         }, 1000);
       });
     }
 
     if (request.headers.get("x-wait-3")) {
       return new Promise((resolve) => {
-          setTimeout(() => {
-            resolve(new Response(
+        setTimeout(() => {
+          resolve(
+            new Response(
               "Waited for x-wait-3!",
-              { status: 200 }
-            ));
+              { status: 200 },
+            ),
+          );
         }, 1000);
       });
     }
 
     return new Response(
       "Hello from Accounts.GET(). Didn't wait!",
-      { status: 200 }
+      { status: 200 },
     );
   }
 }

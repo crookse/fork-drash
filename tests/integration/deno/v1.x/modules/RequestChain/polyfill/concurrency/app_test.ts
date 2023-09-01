@@ -9,13 +9,13 @@ Deno.test("Polyfill - Using Request/Response", async (t) => {
       const req = new Request(url + "/accounts", {
         method: "GET",
         headers: {
-          "x-wait-1": "yup"
-        }
+          "x-wait-1": "yup",
+        },
       });
 
       return handleRequest(req)
         .then((response) => {
-          asserts.assertEquals(response?.status, 200)
+          asserts.assertEquals(response?.status, 200);
           return response;
         })
         .then((response) => response.text())
@@ -26,12 +26,12 @@ Deno.test("Polyfill - Using Request/Response", async (t) => {
 
     await t.step(`GET does not wait`, () => {
       const req = new Request(url + "/accounts", {
-        method: "GET"
+        method: "GET",
       });
 
       return handleRequest(req)
         .then((response) => {
-          asserts.assertEquals(response?.status, 200)
+          asserts.assertEquals(response?.status, 200);
           return response;
         })
         .then((response) => response.text())
@@ -44,13 +44,13 @@ Deno.test("Polyfill - Using Request/Response", async (t) => {
       const req = new Request(url + "/accounts", {
         method: "GET",
         headers: {
-          "x-wait-2": "yup"
-        }
+          "x-wait-2": "yup",
+        },
       });
 
       return handleRequest(req)
         .then((response) => {
-          asserts.assertEquals(response?.status, 200)
+          asserts.assertEquals(response?.status, 200);
           return response;
         })
         .then((response) => response.text())
@@ -61,12 +61,12 @@ Deno.test("Polyfill - Using Request/Response", async (t) => {
 
     await t.step(`GET does not wait`, () => {
       const req = new Request(url + "/accounts", {
-        method: "GET"
+        method: "GET",
       });
 
       return handleRequest(req)
         .then((response) => {
-          asserts.assertEquals(response?.status, 200)
+          asserts.assertEquals(response?.status, 200);
           return response;
         })
         .then((response) => response.text())
@@ -79,13 +79,13 @@ Deno.test("Polyfill - Using Request/Response", async (t) => {
       const req = new Request(url + "/accounts", {
         method: "GET",
         headers: {
-          "x-wait-3": "yup"
-        }
+          "x-wait-3": "yup",
+        },
       });
 
       return handleRequest(req)
         .then((response) => {
-          asserts.assertEquals(response?.status, 200)
+          asserts.assertEquals(response?.status, 200);
           return response;
         })
         .then((response) => response.text())
@@ -96,12 +96,12 @@ Deno.test("Polyfill - Using Request/Response", async (t) => {
 
     await t.step(`GET does not wait`, () => {
       const req = new Request(url + "/accounts", {
-        method: "GET"
+        method: "GET",
       });
 
       return handleRequest(req)
         .then((response) => {
-          asserts.assertEquals(response?.status, 200)
+          asserts.assertEquals(response?.status, 200);
           return response;
         })
         .then((response) => response.text())
