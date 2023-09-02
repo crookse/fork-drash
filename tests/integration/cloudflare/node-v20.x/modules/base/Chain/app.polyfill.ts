@@ -6,7 +6,7 @@ import { RequestValidator } from "../../../../../../../.drashland/lib/esm/standa
 import { ResourceCaller } from "../../../../../../../.drashland/lib/esm/standard/handlers/ResourceCaller";
 import { ResourceNotFoundHandler } from "../../../../../../../.drashland/lib/esm/standard/handlers/ResourceNotFoundHandler";
 import { StatusCode } from "../../../../../../../.drashland/lib/esm/standard/http/response/StatusCode";
-import { StatusCodeDescription } from "../../../../../../../.drashland/lib/esm/standard/http/response/StatusDescription";
+import { StatusDescription } from "../../../../../../../.drashland/lib/esm/standard/http/response/StatusDescription";
 
 import { URLPatternPolyfillResourcesIndex } from "../../../../../../../.drashland/lib/esm/modules/RequestChain/polyfill/URLPatternPolyfillResourcesIndex";
 
@@ -52,18 +52,18 @@ export const handleRequest = (
     .catch((error: Error | HTTPError) => {
       if (
         (error.name === "HTTPError" || error instanceof HTTPError) &&
-        "code" in error &&
-        "code_description" in error
+        "status_code" in error &&
+        "status_code_description" in error
       ) {
         return new Response(error.message, {
-          status: error.code,
-          statusText: error.code_description,
+          status: error.status_code,
+          statusText: error.status_code_description,
         });
       }
 
       return new Response(error.message, {
         status: StatusCode.InternalServerError,
-        statusText: StatusCodeDescription.InternalServerError,
+        statusText: StatusDescription.InternalServerError,
       });
     });
 };

@@ -19,14 +19,14 @@
  * Drash. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ResponseStatusCodeName } from "../../types/ResponseStatusCodeName.ts";
+import { ResponseStatusName } from "../../types/ResponseStatusName.ts";
 
 /**
  * All HTTP response status codes from {@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status}.
  *
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status} from more information on HTTP status codes.
  */
-export const StatusCode: Record<ResponseStatusCodeName, number> = {
+export const StatusCode: Record<ResponseStatusName, number> = {
   // https://developer.mozilla.org/en-US/docs/Web/HTTP/Status#information_responses
   Continue: 100,
   SwitchingProtocols: 101,

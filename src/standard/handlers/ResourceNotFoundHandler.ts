@@ -20,13 +20,13 @@
  */
 
 // Imports > Core
+import { HTTPError } from "../../core/errors/HTTPError.ts";
 import { IResource } from "../../core/Interfaces.ts";
 import { StatusCode } from "../../core/http/response/StatusCode.ts";
 
 // Imports > Standard
 import { ConsoleLogger, Level } from "../log/ConsoleLogger.ts";
 import { Handler } from "./Handler.ts";
-import { HTTPError } from "../errors/HTTPError.ts";
 import { Logger } from "../log/Logger.ts";
 
 type Input = {

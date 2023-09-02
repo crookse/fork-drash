@@ -19,9 +19,9 @@
  * Drash. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ResponseStatusCodeName } from "../../types/ResponseStatusCodeName.ts";
+import { ResponseStatusName } from "../../types/ResponseStatusName.ts";
 
-export const StatusCodeDescription: Record<ResponseStatusCodeName, string> = {
+export const StatusDescription: Record<ResponseStatusName, string> = {
   Continue: "Continue",
   SwitchingProtocols: "Switching Protocols",
   Processing: "Processing",

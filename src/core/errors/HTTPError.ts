@@ -19,11 +19,8 @@
  * Drash. If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Imports > Core
-import { ResponseStatus } from "../http/ResponseStatus.ts";
-import { ResponseStatusCode } from "../../core/Types.ts";
-import { StatusCode } from "../../core/http/response/StatusCode.ts";
-import { StatusCodeDescription } from "../../core/http/response/StatusCodeDescription.ts";
+import { ResponseStatusCode } from "../Types.ts";
+import { Status } from "../http/response/Status.ts";
 
 /**
  * Base class for all HTTP errors in Drash. Use this class to throw uniform HTTP
@@ -49,8 +46,8 @@ class HTTPError extends Error {
   /**
    * The HTTP status code associated with this error.
    */
-  public readonly code: ResponseStatusCode;
-  public readonly code_description: string;
+  public readonly status_code: ResponseStatusCode;
+  public readonly status_code_description: string;
 
   /**
    * The name of this error to be used with conditionals that do not work with
@@ -68,25 +65,20 @@ class HTTPError extends Error {
   public readonly name = "HTTPError";
 
   /**
-   * @param statusCode A valid HTTP status code. If an unknown HTTP status code
-   * is provided, then `500` will be used.
-   * @param message (optional) The error message.
+   * @param statusCode A valid response status code.
+   * @param message (optional) The error message. Defaults to the description
+   * associated with the provided `statusCode`.
    */
   constructor(statusCode: ResponseStatusCode, message?: string) {
     super(message);
 
-    this.code = StatusCode.InternalServerError;
-    this.code_description = StatusCodeDescription.InternalServerError;
+    const status = Status.get(statusCode);
 
-    const status =  ResponseStatus.get(statusCode);
-
-    if (status) {
-      this.code = status.code;
-      this.code_description = status.description;
-    }
+    this.status_code = status?.code || 500;
+    this.status_code_description = status?.description || "";
 
     if (!this.message) {
-      this.message = this.code_description;
+      this.message = this.status_code_description;
     }
   }
 }

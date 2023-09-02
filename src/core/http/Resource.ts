@@ -19,33 +19,15 @@
  * Drash. If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Imports > Core
+import { HTTPError } from "../errors/HTTPError.ts";
 import { StatusCode } from "../../core/http/response/StatusCode.ts";
 import type { IResource } from "../../core/interfaces/IResource.ts";
-import type { ResourceClass } from "../../core/types/ResourceClass.ts";
-
-// Imports > Standard
-import { HTTPError } from "../errors/HTTPError.ts";
-import { type Builder, ResourceGroup } from "./ResourceGroup.ts";
-
-type ResourceClasses = (ResourceClass | ResourceClass[])[];
 
 /**
- * A base class with a resource group builder.
+ * The base resource class for all resources.
  */
-abstract class AbstractResource implements IResource {
-  /**
-   * Instantiate a {@link Builder} with the given `resources`.
-   * @param resources The resource classes to group together.
-   * @returns A {@link Builder}.
-   */
-  static group(
-    ...resources: ResourceClasses
-  ): Omit<Builder, "resources"> {
-    return ResourceGroup.builder().resources(...resources);
-  }
-
-  abstract paths: string[];
+class Resource implements IResource {
+  public paths: string[] = [];
 
   public CONNECT(_input: unknown): unknown {
     throw new HTTPError(StatusCode.NotImplemented);
@@ -86,4 +68,4 @@ abstract class AbstractResource implements IResource {
 
 // FILE MARKER - PUBLIC API ////////////////////////////////////////////////////
 
-export { AbstractResource };
+export { Resource };

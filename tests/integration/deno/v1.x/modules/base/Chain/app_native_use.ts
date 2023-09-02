@@ -1,13 +1,12 @@
-import { AbstractResource } from "../../../../../../../src/standard/http/AbstractResource.ts";
+
 import { Chain as BaseChain } from "../../../../../../../src/modules/base/Chain.ts";
 import { Handler } from "../../../../../../../src/standard/handlers/Handler.ts";
-import { HTTPError } from "../../../../../../../src/standard/errors/HTTPError.ts";
 import { Resource } from "../../../../../../../src/modules/RequestChain/mod.native.ts";
 import { ResourceNotFoundHandler } from "../../../../../../../src/standard/handlers/ResourceNotFoundHandler.ts";
-import { SearchResult } from "../../../../../../../src/modules/base/ResourcesIndex.ts";
-import { URLPatternResourcesIndex } from "../../../../../../../src/modules/RequestChain/native/URLPatternResourcesIndex.ts";
-import { StatusCodeDescription } from "../../../../../../../src/core/http/response/StatusCodeDescription.ts";
+import { StatusDescription } from "../../../../../../../src/core/http/response/StatusDescription.ts";
 import { StatusCode } from "../../../../../../../src/core/http/response/StatusCode.ts";
+import { HTTPError } from "../../../../../../../src/core/errors/HTTPError.ts";
+import { ResourcesIndex, SearchResult } from "../../../../../../../src/standard/handlers/ResourcesIndex.ts";
 
 export const protocol = "http";
 export const hostname = "localhost";
@@ -15,7 +14,7 @@ export const port = 1447;
 
 type Ctx = { request: Request; response?: Response; resource?: Resource };
 
-class Home extends AbstractResource {
+class Home extends Resource {
   public paths = ["/"];
 
   public GET(ctx: Ctx) {
@@ -64,7 +63,8 @@ class UseInsteadOfHandleBuilder extends BaseChain.Builder {
 
 // Build the chain
 
-const resourceIndex = new URLPatternResourcesIndex(Home);
+// @ts-ignore We know URLPattern exists if dev'ing with Deno's extension
+const resourceIndex = new ResourcesIndex(URLPattern, Home);
 const resourceNotFoundHandler = new ResourceNotFoundHandler();
 class ReturnSearchResult extends Handler<SearchResult, SearchResult> {
   handle(result: SearchResult): SearchResult {
@@ -121,18 +121,18 @@ export const handleRequest = (
     .catch((error: Error | HTTPError) => {
       if (
         (error.name === "HTTPError" || error instanceof HTTPError) &&
-        "code" in error &&
-        "code_description" in error
+        "status_code" in error &&
+        "status_code_description" in error
       ) {
         return new Response(error.message, {
-          status: error.code,
-          statusText: error.code_description,
+          status: error.status_code,
+          statusText: error.status_code_description,
         });
       }
 
       return new Response(error.message, {
         status: StatusCode.InternalServerError,
-        statusText: StatusCodeDescription.InternalServerError,
+        statusText: StatusDescription.InternalServerError,
       });
     });
 };

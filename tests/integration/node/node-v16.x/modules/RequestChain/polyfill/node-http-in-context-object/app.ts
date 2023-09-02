@@ -2,7 +2,7 @@ import { IncomingMessage, ServerResponse } from "node:http";
 
 import { HTTPError } from "../../../../../../../../.drashland/lib/esm/standard/errors/HTTPError";
 import { StatusCode } from "../../../../../../../../.drashland/lib/esm/standard/http/response/StatusCode";
-import { StatusCodeDescription } from "../../../../../../../../.drashland/lib/esm/standard/http/response/StatusDescription";
+import { StatusDescription } from "../../../../../../../../.drashland/lib/esm/standard/http/response/StatusDescription";
 import * as Chain from "../../../../../../../../.drashland/lib/esm/modules/RequestChain/mod.polyfill";
 
 export const protocol = "http";
@@ -67,15 +67,15 @@ export const handleRequest = (
     .catch((error: Error | HTTPError) => {
       if (
         (error.name === "HTTPError" || error instanceof HTTPError) &&
-        "code" in error &&
-        "code_description" in error
+        "status_code" in error &&
+        "status_code_description" in error
       ) {
-        context.response.statusCode = error.code;
-        context.response.statusMessage = error.code_description;
+        context.response.statusCode = error.status_code;
+        context.response.statusMessage = error.status_code_description;
         context.response.end(error.message);
       } else {
         context.response.statusCode = StatusCode.InternalServerError;
-        context.response.statusMessage = StatusCodeDescription.InternalServerError;
+        context.response.statusMessage = StatusDescription.InternalServerError;
         context.response.end(error.message);
       }
 

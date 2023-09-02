@@ -19,9 +19,27 @@
  * Drash. If not, see <https://www.gnu.org/licenses/>.
  */
 
-interface IConstructorWithArgs<Instance, Args extends unknown[] = unknown[]> {
-  new (...args: Args): Instance;
+// Imports > Standard
+import { Handler } from "./Handler.ts";
+
+abstract class AbstractSearchIndex<
+  SearchResult,
+> extends Handler<unknown, SearchResult> {
+  /**
+   * Build the index that can be searched via `this.search(...)`.
+   * @param items The items to go into the index.
+   */
+  protected abstract buildIndex(items?: unknown): void;
+
+  /**
+   * Search the index.
+   * @param input The data containing the location information for items in the
+   * index.
+   * @retuns The results of the search.
+   */
+  protected abstract search(input: unknown): SearchResult;
 }
 
-export type ConstructorWithArgs<Instance, Args extends unknown[] = unknown[]> =
-  IConstructorWithArgs<Instance, Args>;
+// FILE MARKER - PUBLIC API ////////////////////////////////////////////////////
+
+export { AbstractSearchIndex };

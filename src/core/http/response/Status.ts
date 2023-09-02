@@ -20,16 +20,11 @@
  */
 
 // Imports > Core
-import { StatusCode } from "../../core/http/response/StatusCode.ts";
-import { StatusCodeDescription } from "../../core/http/response/StatusCodeDescription.ts";
-import type { ResponseStatusCode, ResponseStatusCodeDescription, ResponseStatusCodeName } from "../../core/Types.ts";
+import { StatusCode } from "./StatusCode.ts";
+import { StatusDescription } from "./StatusDescription.ts";
+import type { ResponseStatusCode, ResponseStatusDescription, ResponseStatusName } from "../../Types.ts";
 
-type Status = {
-  code: ResponseStatusCode;
-  description: ResponseStatusCodeDescription;
-}
-
-class ResponseStatus {
+class Status {
   /**
    * Get a status code object.
    * @param statusCode A valid status code. See HTTP Status link below for a
@@ -39,16 +34,19 @@ class ResponseStatus {
    *
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status}
    */
-  static get(statusCode: ResponseStatusCode): Status | undefined {
+  static get(statusCode: ResponseStatusCode): {
+    code: ResponseStatusCode;
+    description: ResponseStatusDescription;
+  } | undefined {
     const entries = Object.entries<number>(
       StatusCode
-    ) as [ResponseStatusCodeName, ResponseStatusCode][];
+    ) as [ResponseStatusName, ResponseStatusCode][];
 
     for (const [ key, value ] of entries) {
       if (value === statusCode) {
         return {
           code: statusCode,
-          description: StatusCodeDescription[key],
+          description: StatusDescription[key],
         }
       }
     }
@@ -57,4 +55,4 @@ class ResponseStatus {
 
 // FILE MARKER - PUBLIC API ////////////////////////////////////////////////////
 
-export { ResponseStatus };
+export { Status };

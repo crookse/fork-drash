@@ -1,6 +1,6 @@
 import { HTTPError } from "../../../../../../../.drashland/lib/esm/standard/errors/HTTPError";
 import { StatusCode } from "../../../../../../../.drashland/lib/esm/standard/http/response/StatusCode";
-import { StatusCodeDescription } from "../../../../../../../.drashland/lib/esm/standard/http/response/StatusDescription";
+import { StatusDescription } from "../../../../../../../.drashland/lib/esm/standard/http/response/StatusDescription";
 import * as Chain from "../../../../../../../.drashland/lib/esm/modules/RequestChain/mod.native";
 
 export const protocol = "http";
@@ -66,25 +66,25 @@ export const handleRequest = (
         "Response not generated",
         {
           status: StatusCode.InternalServerError,
-          statusText: StatusCodeDescription.InternalServerError,
+          statusText: StatusDescription.InternalServerError,
         },
       );
     })
     .catch((error: Error | HTTPError) => {
       if (
         (error.name === "HTTPError" || error instanceof HTTPError) &&
-        "code" in error &&
-        "code_description" in error
+        "status_code" in error &&
+        "status_code_description" in error
       ) {
         return new Response(error.message, {
-          status: error.code,
-          statusText: error.code_description,
+          status: error.status_code,
+          statusText: error.status_code_description,
         });
       }
 
       return new Response(error.message, {
         status: StatusCode.InternalServerError,
-        statusText: StatusCodeDescription.InternalServerError,
+        statusText: StatusDescription.InternalServerError,
       });
     });
 };

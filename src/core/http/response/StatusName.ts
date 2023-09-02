@@ -19,7 +19,7 @@
  * Drash. If not, see <https://www.gnu.org/licenses/>.
  */
 
-export const StatusCodeName = {
+export const StatusName = {
   Continue: "Continue",
   SwitchingProtocols: "SwitchingProtocols",
   Processing: "Processing",

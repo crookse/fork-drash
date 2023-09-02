@@ -19,19 +19,6 @@
  * Drash. If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Imports > Modules
-import { ResourceClassesArray } from "../../base/types/ResourceClassesArray.ts";
-import { ResourcesIndex as BaseResourcesIndex } from "../../base/ResourcesIndex.ts";
+import { StatusName } from "../http/response/StatusName.ts";
 
-// Imports > Local
-import { URLPatternPolyfill } from "./URLPatternPolyfill.ts";
-
-class URLPatternPolyfillResourcesIndex extends BaseResourcesIndex {
-  constructor(...resources: ResourceClassesArray) {
-    super(URLPatternPolyfill, resources);
-  }
-}
-
-// FILE MARKER - PUBLIC API ////////////////////////////////////////////////////
-
-export { URLPatternPolyfillResourcesIndex };
+export type ResponseStatusName = (typeof StatusName)[keyof typeof StatusName];
