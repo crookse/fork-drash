@@ -57,7 +57,6 @@ class ResourcesIndex extends AbstractSearchIndex<
   Promise<SearchResult | null>
 > {
   #cached_search_results: Record<string, SearchResult | null> = {};
-  #logger: Logger = ConsoleLogger.create("ResourcesIndex", Level.Off);
   protected index: {
     resource: Resource;
     path_patterns: IURLPattern[];
@@ -78,15 +77,12 @@ class ResourcesIndex extends AbstractSearchIndex<
   public handle(request: Input): Promise<SearchResult | null> {
     return Promise
       .resolve()
-      .then(() => this.#logger.debug(`Input received`))
       .then(() => this.#validateRequest(request))
       .then(() => this.search(request))
       .then((result) => super.nextHandler({ request, result }));
   }
 
   protected override buildIndex(resources: ResourceClasses[]): void {
-    this.#logger.debug(`Building resources index`);
-
     for (const Resource of resources) {
       if (Array.isArray(Resource)) {
         this.buildIndex(Resource);
@@ -106,11 +102,6 @@ class ResourcesIndex extends AbstractSearchIndex<
         urlPatterns.push(
           new this.URLPatternClass({ pathname: path + "{/}?" }),
         );
-
-        this.#logger.debug(`Added resource/pathname mapping: {}`, {
-          name: resource.constructor.name,
-          path,
-        });
       });
 
       this.index.push({
@@ -123,21 +114,6 @@ class ResourcesIndex extends AbstractSearchIndex<
   protected search(request: { url: string }): Promise<SearchResult | null> {
     const fullyQualifiedUrl = request.url;
 
-    this.#logger.debug(`Searching for resource - url: {}`, fullyQualifiedUrl);
-
-    let urlPathname = fullyQualifiedUrl;
-
-    try {
-      urlPathname = fullyQualifiedUrl.replace(/http(s)?:\/\/.+\//, "/");
-    } catch (error) {
-      this.#logger.debug(`Error searching for resource - error: {}`, error);
-    }
-
-    this.#logger.debug(
-      `Finding first resource by URL pathname - pathname: {}`,
-      urlPathname,
-    );
-
     const cachedSearchResult = this.#getCachedSearchResult(fullyQualifiedUrl);
     if (cachedSearchResult) {
       return Promise.resolve(cachedSearchResult);
@@ -145,17 +121,6 @@ class ResourcesIndex extends AbstractSearchIndex<
 
     for (const resourceURLPatterns of this.index.values()) {
       for (const pattern of resourceURLPatterns.path_patterns) {
-        try {
-          this.#logger.trace(
-            "Checking path - resource: {}; pattern: {}; pathnames: {}",
-            resourceURLPatterns.resource?.constructor?.name || "Resource",
-            pattern.pathname,
-            urlPathname,
-          );
-        } catch (error) {
-          this.#logger.debug(`Error checking path - error: {}`, error.message);
-        }
-
         const result = pattern.exec(fullyQualifiedUrl);
 
         // No resource? Check the next one.
@@ -164,16 +129,6 @@ class ResourcesIndex extends AbstractSearchIndex<
         }
 
         const resource = resourceURLPatterns.resource;
-
-        this.#logger.debug(
-          `Found resource - resource: {}`,
-          resource?.constructor?.name,
-        );
-
-        this.#logger.debug(
-          `Caching resource - resource: {}`,
-          resource?.constructor?.name,
-        );
 
         this.#cached_search_results[fullyQualifiedUrl] = {
           path_params: result.pathname?.groups || {},
@@ -193,11 +148,6 @@ class ResourcesIndex extends AbstractSearchIndex<
       const cachedResult = this.#cached_search_results[fullyQualifiedUrl];
 
       if (cachedResult) {
-        this.#logger.debug(
-          `Found cached resource - resource: {}`,
-          cachedResult.resource?.constructor?.name,
-        );
-
         return cachedResult;
       }
     }

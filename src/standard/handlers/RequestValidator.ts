@@ -35,11 +35,7 @@ type Input = {
 class RequestValidator<
   I extends Input = Input,
 > extends Handler<unknown, Promise<unknown>> {
-  #logger = ConsoleLogger.create("RequestValidator", Level.Off);
-
   handle(request: I): Promise<unknown> {
-    this.#logger.debug(`Request received`);
-
     return Promise
       .resolve()
       .then(() => this.#validate(request))
@@ -53,8 +49,6 @@ class RequestValidator<
   }
 
   #validate(request: unknown): void {
-    this.#logger.debug(`Validating request`);
-
     if (!request) {
       throw new HTTPError(
         StatusCode.UnprocessableEntity,
@@ -82,12 +76,6 @@ class RequestValidator<
         `Request URL could not be read`,
       );
     }
-
-    this.#logger.trace(
-      `Request validated - method: {}; url: {}`,
-      request.method,
-      request.url,
-    );
   }
 }
 

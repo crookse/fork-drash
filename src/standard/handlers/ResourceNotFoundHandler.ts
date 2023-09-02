@@ -41,15 +41,11 @@ type Input = {
 };
 
 class ResourceNotFoundHandler<O = unknown> extends Handler<Input, Promise<O>> {
-  #logger: Logger = ConsoleLogger.create("ResourceNotFoundHandler", Level.Off);
-
   handle(input: Input): Promise<O> {
     return Promise
       .resolve()
-      .then(() => this.#logger.debug(`Request received`))
       .then(() => this.#validate(input))
       .then(() => {
-        this.#logger.debug(`Sending to next handler`);
         return super.nextHandler({
           request: input.request,
           resource: input.result.resource,
