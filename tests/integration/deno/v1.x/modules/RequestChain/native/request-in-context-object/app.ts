@@ -1,6 +1,6 @@
 import { HTTPError } from "../../../../../../../../src/standard/errors/HTTPError.ts";
-import { StatusCode } from "../../../../../../../../src/standard/http/response/StatusCode.ts";
-import { StatusDescription } from "../../../../../../../../src/standard/http/response/StatusDescription.ts";
+import { StatusCode } from "../../../../../../../../src/core/http/response/StatusCode.ts";
+import { StatusCodeDescription } from "../../../../../../../../src/core/http/response/StatusCodeDescription.ts";
 import * as Chain from "../../../../../../../../src/modules/RequestChain/mod.native.ts";
 
 export const protocol = "http";
@@ -67,7 +67,7 @@ export const handleRequest = (
         "Response not generated",
         {
           status: StatusCode.InternalServerError,
-          statusText: StatusDescription.InternalServerError,
+          statusText: StatusCodeDescription.InternalServerError,
         },
       );
     })
@@ -85,7 +85,7 @@ export const handleRequest = (
 
       return new Response(error.message, {
         status: StatusCode.InternalServerError,
-        statusText: StatusDescription.InternalServerError,
+        statusText: StatusCodeDescription.InternalServerError,
       });
     });
 };

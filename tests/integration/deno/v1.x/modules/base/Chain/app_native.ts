@@ -5,8 +5,8 @@ import { RequestParamsParser } from "../../../../../../../src/standard/handlers/
 import { RequestValidator } from "../../../../../../../src/standard/handlers/RequestValidator.ts";
 import { ResourceCaller } from "../../../../../../../src/standard/handlers/ResourceCaller.ts";
 import { ResourceNotFoundHandler } from "../../../../../../../src/standard/handlers/ResourceNotFoundHandler.ts";
-import { StatusCode } from "../../../../../../../src/standard/http/response/StatusCode.ts";
-import { StatusDescription } from "../../../../../../../src/standard/http/response/StatusDescription.ts";
+import { StatusCode } from "../../../../../../../src/core/http/response/StatusCode.ts";
+import { StatusCodeDescription } from "../../../../../../../src/core/http/response/StatusCodeDescription.ts";
 
 import { URLPatternResourcesIndex } from "../../../../../../../src/modules/RequestChain/native/URLPatternResourcesIndex.ts";
 
@@ -62,7 +62,7 @@ export const handleRequest = (
 
       return new Response(error.message, {
         status: StatusCode.InternalServerError,
-        statusText: StatusDescription.InternalServerError,
+        statusText: StatusCodeDescription.InternalServerError,
       });
     });
 };

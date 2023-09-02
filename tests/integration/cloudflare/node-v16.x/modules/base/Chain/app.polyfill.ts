@@ -6,7 +6,7 @@ import { RequestValidator } from "../../../../../../../.drashland/lib/esm/standa
 import { ResourceCaller } from "../../../../../../../.drashland/lib/esm/standard/handlers/ResourceCaller";
 import { ResourceNotFoundHandler } from "../../../../../../../.drashland/lib/esm/standard/handlers/ResourceNotFoundHandler";
 import { StatusCode } from "../../../../../../../.drashland/lib/esm/standard/http/response/StatusCode";
-import { StatusDescription } from "../../../../../../../.drashland/lib/esm/standard/http/response/StatusDescription";
+import { StatusCodeDescription } from "../../../../../../../.drashland/lib/esm/standard/http/response/StatusDescription";
 
 import { URLPatternPolyfillResourcesIndex } from "../../../../../../../.drashland/lib/esm/modules/RequestChain/polyfill/URLPatternPolyfillResourcesIndex";
 
@@ -63,7 +63,7 @@ export const handleRequest = (
 
       return new Response(error.message, {
         status: StatusCode.InternalServerError,
-        statusText: StatusDescription.InternalServerError,
+        statusText: StatusCodeDescription.InternalServerError,
       });
     });
 };

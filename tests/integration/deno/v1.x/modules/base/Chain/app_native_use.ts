@@ -2,13 +2,12 @@ import { AbstractResource } from "../../../../../../../src/standard/http/Abstrac
 import { Chain as BaseChain } from "../../../../../../../src/modules/base/Chain.ts";
 import { Handler } from "../../../../../../../src/standard/handlers/Handler.ts";
 import { HTTPError } from "../../../../../../../src/standard/errors/HTTPError.ts";
-import { MethodOf } from "../../../../../../../src/core/Types.ts";
 import { Resource } from "../../../../../../../src/modules/RequestChain/mod.native.ts";
 import { ResourceNotFoundHandler } from "../../../../../../../src/standard/handlers/ResourceNotFoundHandler.ts";
 import { SearchResult } from "../../../../../../../src/modules/base/ResourcesIndex.ts";
-import { StatusCode } from "../../../../../../../src/standard/http/response/StatusCode.ts";
-import { StatusDescription } from "../../../../../../../src/standard/http/response/StatusDescription.ts";
 import { URLPatternResourcesIndex } from "../../../../../../../src/modules/RequestChain/native/URLPatternResourcesIndex.ts";
+import { StatusCodeDescription } from "../../../../../../../src/core/http/response/StatusCodeDescription.ts";
+import { StatusCode } from "../../../../../../../src/core/http/response/StatusCode.ts";
 
 export const protocol = "http";
 export const hostname = "localhost";
@@ -94,8 +93,9 @@ const chain = (new UseInsteadOfHandleBuilder())
     if (!ctx.resource) {
       throw new HTTPError(500, "No resource");
     }
-    return ctx.resource
-      [ctx.request.method?.toUpperCase() as MethodOf<Resource>](ctx);
+    const method = ctx.request.method?.toUpperCase();
+    // @ts-ignore We know this exists
+    return ctx.resource[method](ctx);
   })
   .use(function SendResponse(ctx) {
     if (!ctx.response) {
@@ -132,7 +132,7 @@ export const handleRequest = (
 
       return new Response(error.message, {
         status: StatusCode.InternalServerError,
-        statusText: StatusDescription.InternalServerError,
+        statusText: StatusCodeDescription.InternalServerError,
       });
     });
 };

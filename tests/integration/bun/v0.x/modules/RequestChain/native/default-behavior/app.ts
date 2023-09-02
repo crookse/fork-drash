@@ -1,6 +1,6 @@
 import { HTTPError } from "../../../../../../../../.drashland/lib/esm/standard/errors/HTTPError";
 import { StatusCode } from "../../../../../../../../.drashland/lib/esm/standard/http/response/StatusCode";
-import { StatusDescription } from "../../../../../../../../.drashland/lib/esm/standard/http/response/StatusDescription";
+import { StatusCodeDescription } from "../../../../../../../../.drashland/lib/esm/standard/http/response/StatusDescription";
 import * as Chain from "../../../../../../../../.drashland/lib/esm/modules/RequestChain/mod.native";
 
 export const protocol = "http";
@@ -51,7 +51,7 @@ export const handleRequest = (
 
       return new Response(error.message, {
         status: StatusCode.InternalServerError,
-        statusText: StatusDescription.InternalServerError,
+        statusText: StatusCodeDescription.InternalServerError,
       });
     });
 };

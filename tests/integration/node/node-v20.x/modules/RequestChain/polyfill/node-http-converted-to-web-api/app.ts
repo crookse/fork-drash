@@ -2,7 +2,7 @@ import { IncomingMessage, ServerResponse } from "node:http";
 
 import { HTTPError } from "../../../../../../../../.drashland/lib/esm/standard/errors/HTTPError";
 import { StatusCode } from "../../../../../../../../.drashland/lib/esm/standard/http/response/StatusCode";
-import { StatusDescription } from "../../../../../../../../.drashland/lib/esm/standard/http/response/StatusDescription";
+import { StatusCodeDescription } from "../../../../../../../../.drashland/lib/esm/standard/http/response/StatusDescription";
 import * as Chain from "../../../../../../../../.drashland/lib/esm/modules/RequestChain/mod.polyfill";
 // import {
 //   GroupConsoleLogger,
@@ -72,7 +72,7 @@ export const handleRequest = (
       }
 
       res.statusCode = StatusCode.InternalServerError;
-      res.statusMessage = StatusDescription.InternalServerError;
+      res.statusMessage = StatusCodeDescription.InternalServerError;
       res.end(error.message);
     });
 };
