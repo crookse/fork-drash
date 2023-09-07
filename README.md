@@ -1,27 +1,19 @@
-# Drash
-
 [![Latest Release](https://img.shields.io/github/release/drashland/drash.svg?color=bright_green&label=latest)](https://github.com/drashland/drash/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/drashland/drash/master.yml?branch=main&label=branch:main)](https://github.com/drashland/drash/actions/workflows/master.yml?query=branch%3Amain)
 [![Drash Land Discord](https://img.shields.io/badge/discord-join-blue?logo=discord)](https://discord.gg/RFsCSaHRWK)
 
-Drash - A microframework for building JavaScript/TypeScript HTTP systems.
+# Fork - Drash
 
-View the full documentation at https://drash.land/drash.
+This repository forks the [main repository](https://github.com/drashland/drash) and contains proposals (written only by me) for the main repository.
 
-In the event the documentation pages are not accessible, please view the raw version of the documentation at https://github.com/drashland/website-v2/.
+## Build Target
 
-## Quickstart
+- Version: 3.0.0-beta.2023XXXXXXXX
+  - The build tag is to be determined. __XXXXXXXX__ in the version will be replaced with MMDDHHMM. HHMM will be in 24-hour time. For a full example, a version would look like v3.0.0-beta.202309271500 and would mean, "v3.0.0 beta released on September 27, 2023 @ 1500.
+- Target pull request: https://github.com/drashland/drash/pull/698
+- Docs pull request: https://github.com/drashland/website-v2/pull/200
 
-### Bun
+## Legal
 
-### cloudflare
-
-### Deno
-
-### Node
-
-#### Node v16.x
-
-#### Node v18.x
-
-#### Node v20.x
+- [GPL-3.0 license](https://github.com/crookse/fork-drash/blob/to-main/COPYING)
+- [Authors](https://github.com/crookse/fork-drash/blob/to-main/AUTHORS)
