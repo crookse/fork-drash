@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "target": "es2015"
+  },
+  "include": [
+    "../test/**/*.ts",
+    "./core/**/*.ts",
+    "./modules/**/*.ts",
+    "./standard/**/*.ts"
+  ]
+}
