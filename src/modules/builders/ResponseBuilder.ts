@@ -65,3 +65,12 @@ export class ResponseBuilder implements Builder<Response> {
     });
   }
 }
+
+/**
+ * Get a {@link Response} builder.
+ * @returns A response builder.
+ * @see {@link ResponseBuilder} for implementation details.
+ */
+export function response() {
+  return new ResponseBuilder();
+}
