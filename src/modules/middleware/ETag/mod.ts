@@ -1,100 +1,38 @@
-import { RequestMethod, ResponseStatus } from "../../../core/Types.ts";
-import { ResponseStatusCode } from "../../../core/types/ResponseStatusCode.ts";
-import { Method } from "../../../core/http/request/Method.ts";
-import { HTTPError } from "../../../core/errors/HTTPError.ts";
+import { Header } from "../../../core/http/Header.ts";
 import { Middleware } from "../../../standard/http/Middleware.ts";
+import { response } from "./ETagResponse.ts";
+import { ResponseStatus, ResponseStatusName } from "../../../core/Types.ts";
+import { Status } from "../../../core/http/response/Status.ts";
 import { StatusCode } from "../../../core/http/response/StatusCode.ts";
 import { StatusDescription } from "../../../core/http/response/StatusDescription.ts";
-import { Status } from "../../../core/http/response/Status.ts";
-
-export type Options = {
-  cookie?: boolean;
-  weak: boolean;
-};
+import { HTTPError } from "../../../core/errors/HTTPError.ts";
 
 const defaultOptions: Options = {
-  cookie: false,
+  hash_length: 27,
   weak: false,
 };
 
-type ETagOptions = {
+type Options = {
   weak?: boolean;
   hash_length?: number;
-}
+};
 
-class ResponseBuilder {
-  #headers = new Headers();
-  #response_init: ResponseInit = {};
-  #body: BodyInit | null = null;
+type Context = {
+  request: Request;
+  response: Response;
+  etag?: string;
+  done?: boolean;
+};
 
-  headers(headers: Record<string, string>) {
-    for (const [k ,v] of Object.entries(headers)) {
-      this.#headers.set(k, v);
-    }
-
-    return this;
-  }
-
-  status(status: ResponseStatusCode) {
-    this.#response_init.status = status;
-    return this;
-  }
-
-  build() {
-    return new Response(this.#body, {
-      ...this.#response_init,
-      headers: this.#headers,
-    })
-  }
-}
-
-class Extrasponse {
-  #response: Response;
-  #default_etag_options: ETagOptions = {
-    weak: false,
-    hash_length: 27
-  };
-
-  constructor(response: Response) {
-    this.#response = response;
-  }
-
-  etag(options: ETagOptions = this.#default_etag_options) {
-    return this
-      .hash(options.hash_length)
-      .then((hash) => {
-        return this
-          .#response
-          .clone()
-          .text()
-          .then((text) => text.length.toString(16))
-          .then((text) => `"${text}-${hash}"`);
-      })
-      .then((header) => {
-        if (options.weak) {
-          return "W/" + header;
-        }
-
-        return header;
-      });
-  }
-
-  hash(maxLen = 27) {
-    return this.#response
-      .clone()
-      .text()
-      .then((text) => btoa(text.substring(0, maxLen)));
-  }
-}
-
-function extrasponse(response: Response) {
-  return new Extrasponse(response)
-}
+type CachedResource = {
+  [Header.ETag]: string;
+  [Header.LastModified]: string;
+};
 
 class ETagMiddleware extends Middleware {
-  #etags: Record<string, string> = {};
-  #options: Options;
+  #cache: Record<string, CachedResource> = {};
   #default_etag = '"0-2jmj7l5rSw0yVb/vlWAYkK/YBwk"';
+  #options: Options;
 
   constructor(options: Options) {
     super();
@@ -105,100 +43,197 @@ class ETagMiddleware extends Middleware {
     };
   }
 
-  responseHasEmptyBody(response: Response) {
-    const nullBody = response.body === null;
-    const zeroLengthBody = response.headers.get("content-length") === "0";
-
-    return nullBody || zeroLengthBody;
-  }
-
-  sendResponseForNoneMatchRequest(request: Request, response: Response) {
-    // When the body is empty, we want to set a default etag
-    if (this.responseHasEmptyBody(response)) {
-      const existingModifiedDate = this.#etags[this.#default_etag];
-
-      return new Response(null, {
-        status: 304,
-        headers: {
-          "etag": this.#default_etag,
-          "last-modified": existingModifiedDate,
-        }
-      });
-    }
-
-    const requestNoneMatch = request.headers.get("if-none-match");
-
-    return this
-      .getEtagHeader(response)
-      .then((header) => {
-        if (header === requestNoneMatch) {
-          return new Response(null, {
-            status: 304,
-            headers: {
-              "etag": header,
-              "last-modified": this.#etags[header],
-            }
-          })
-        }
-
-        const newLastModifiedDate = new Date().toUTCString();
-        this.#etags[this.#default_etag] = newLastModifiedDate;
-
-        return new Response(null, {
-          status: response.status || 200,
-          headers: {
-            "etag": header,
-            "last-modified": newLastModifiedDate,
-          }
-        })
-      })
-  }
-
-  sendResponseWithNewEtag(response: Response) {
-    const newLastModifiedDate = new Date().toUTCString();
-    this.#etags[this.#default_etag] = newLastModifiedDate;
-
-    // Else request doesnt have a new one so generate everything from scratch
-    return this
-      .getEtagHeader(response)
-      .then((header) => {
-        return new Response(response.body, {
-          status: response.status || 200,
-          headers: {
-            "etag": header,
-            "last-modified": newLastModifiedDate,
-          }
-        });
-      })
-  }
-
   ALL(request: Request): Promise<Response> {
-    const requestNoneMatch = request.headers.get("if-none-match");
-
     return Promise
       .resolve()
+      .then(() => this.handleEtagMatchesRequestIfMatchHeader(request))
       .then(() => this.next<Response>(request))
-      .then((response) => {
-        if (requestNoneMatch) {
-          return this.sendResponseForNoneMatchRequest(request, response);
-        }
+      .then((response) => ({ request, response }))
+      .then((context) => this.handleIfResponseEmpty(context))
+      .then((context) => this.createEtagHeader(context))
+      .then((context) =>
+        this.handleEtagMatchesRequestIfNoneMatchHeader(context)
+      )
+      .then((context) => this.sendResponse(context));
+  }
 
-        return this.sendResponseWithNewEtag(response);
+  protected createEtagHeader(context: Context) {
+    if (context.done) {
+      return context;
+    }
+
+    return response(context.response)
+      .etagHeader(this.#options)
+      .then((etag) => {
+        context.etag = etag;
+        return context;
       });
   }
 
-  protected getEtagHeader(response: Response) {
-    // create the etag value to use;
-    return extrasponse(response)
-      .etag({ weak: this.#options.weak, hash_length: 27 });
+  protected createLastModifiedHeader() {
+    return new Date().toUTCString();
+  }
 
+  protected getCacheKey(request: Request) {
+    const { method, url } = request;
+    return method + ";" + url;
+  }
+
+  protected handleEtagMatchesRequestIfNoneMatchHeader(context: Context) {
+    if (context.done) {
+      return context;
+    }
+
+    if (!context.etag) {
+      return context;
+    }
+
+    if (context.request.headers.get(Header.IfNoneMatch) === context.etag) {
+      // Edge case: We need to check if the etag was already cached. If we do
+      // not do this, then we could end up sending a 304 for a response that
+      // this middleware has not processed yet. This can happen if a client
+      // sends a request with an etag (for shits and giggles) and the response
+      // to that request's etag matches. In this case, we need to send the
+      // repsonse as if it was being requested for the first time. After that,
+      // we cache the etag so subsequent requests result in a 304 response.
+      if (this.requestIsCached(context.request)) {
+        context.response = new Response(null, {
+          status: StatusCode.NotModified,
+          statusText: StatusDescription.NotModified,
+          headers: {
+            [Header.ETag]: context.etag,
+            [Header.LastModified]: this
+              .#cache[this.getCacheKey(context.request)][Header.LastModified],
+          },
+        });
+
+        context.done = true;
+      }
+    }
+
+    return context;
+  }
+
+  protected handleEtagMatchesRequestIfMatchHeader(request: Request) {
+    if (!this.requestIsCached(request)) {
+      return;
+    }
+
+    if (!request.headers.get(Header.IfMatch)) {
+      return;
+    }
+
+    const cacheKey = this.getCacheKey(request);
+    const ifMatchHeader = request.headers.get(Header.IfMatch);
+
+    // If the headers do not match, then a mid-air collision will happen if
+    // we do not error out
+    if (ifMatchHeader !== this.#cache[cacheKey][Header.ETag]) {
+      throw new HTTPError(Status.PreconditionFailed);
+    }
+  }
+
+  protected handleIfResponseEmpty(context: Context) {
+    if (context.done) {
+      return context;
+    }
+
+    const contentLength = context.response.headers.get(Header.ContentLength);
+
+    // This method should only handle empty responses. That is, a response with
+    // no body. So gtfo if you got one.
+    if (
+      context.response.body ||
+      (context.response.body !== null) ||
+      (contentLength && contentLength !== "0")
+    ) {
+      return context;
+    }
+
+    let lastModified;
+
+    // If etag is already present, then use the previous last-modified value
+    if (context.request.headers.get(Header.IfNoneMatch)) {
+      lastModified = this.#cache[this.#default_etag][Header.LastModified];
+    } else {
+      // Otherwise, create a new "Last-Modified" value
+      lastModified = this.createLastModifiedHeader();
+      this.#cache[this.getCacheKey(context.request)][Header.LastModified] =
+        lastModified;
+    }
+
+    context.response = new Response(null, {
+      status: StatusCode.NotModified,
+      statusText: StatusDescription.NotModified,
+      headers: {
+        [Header.ETag]: this.#default_etag,
+        [Header.LastModified]: lastModified,
+      },
+    });
+
+    context.done = true;
+
+    return context;
+  }
+
+  protected requestIsCached(request: Request) {
+    if (this.getCacheKey(request) in this.#cache) {
+      return true;
+    }
+
+    return false;
+  }
+
+  protected sendResponse(context: Context) {
+    if (context.done) {
+      return context.response;
+    }
+
+    if (!context.etag) {
+      throw new Error("Error generating ETag");
+    }
+
+    const newLastModifiedDate = this.createLastModifiedHeader();
+    this.#cache[this.getCacheKey(context.request)] = {
+      [Header.ETag]: context.etag,
+      [Header.LastModified]: newLastModifiedDate,
+    };
+
+    const responseStatusCode = context.response.status;
+    let status: ResponseStatus = Status.OK;
+
+    for (const [name, statusCode] of Object.entries(StatusCode)) {
+      if (responseStatusCode === statusCode) {
+        status = Status[name as ResponseStatusName];
+      }
+    }
+
+    return new Response(context.response.body, {
+      status: status.code,
+      statusText: status.description,
+      headers: {
+        [Header.ETag]: context.etag,
+        [Header.LastModified]: newLastModifiedDate,
+      },
+    });
   }
 }
 
-export function ETag(options: Options = defaultOptions) {
-  return class EtagMiddlewareExtension extends ETagMiddleware {
+/**
+ * Create the ETag middleware.
+ * @param options (optional) Options to use for creating the ETag header.
+ * @returns The middleware class that can be instantiated. WHen it is
+ * instantiated, it instantiate with the provided `options` or default to its
+ * default options if no options are provided.
+ */
+function ETag(options: Options = defaultOptions) {
+  return class DefaultEtagMiddleware extends ETagMiddleware {
     constructor() {
       super(options);
     }
-  }
+  };
 }
+
+// FILE MARKER - PUBLIC API ////////////////////////////////////////////////////
+
+export { defaultOptions, ETag, ETagMiddleware, type Options };

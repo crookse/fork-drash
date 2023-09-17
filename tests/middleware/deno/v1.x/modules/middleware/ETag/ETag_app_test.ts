@@ -19,21 +19,70 @@
  * Drash. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {
-  CORS,
-  Options,
-} from "../../../../../../../src/modules/middleware/CORS/mod.ts";
 import { asserts } from "../../../../../../deps.ts";
-import { handleRequest, hostname, port, protocol } from "./ETag_app.ts";
-import { testCaseName, assertionMessage } from "../../../../utils.ts";
+import {
+  assertionMessage,
+  chain,
+  query,
+  testCaseName,
+} from "../../../../utils.ts";
+import { StatusCode } from "../../../../../../../src/core/http/response/StatusCode.ts";
+import { StatusDescription } from "../../../../../../../src/core/http/response/StatusDescription.ts";
+import { Method } from "../../../../../../../src/core/http/request/Method.ts";
+import { IHandler } from "../../../../../../../src/core/Interfaces.ts";
+import * as Chain from "../../../../../../../src/modules/RequestChain/mod.native.ts";
+import {
+  defaultOptions,
+  ETag,
+  ETagMiddleware,
+  type Options,
+} from "../../../../../../../src/modules/middleware/ETag/mod.ts";
 
+type TestCase = {
+  chain: IHandler<Request, Promise<Response>>;
+  requests: {
+    request: RequestInfo;
+    expected_response: Expected;
+  }[];
+};
+
+type RequestInfo =
+  & RequestInit
+  & {
+    path: string;
+    query?: Record<string, string>;
+  };
+
+type Expected =
+  & Required<ResponseInit>
+  & {
+    body: unknown;
+    headers: Record<string, string>;
+  };
+
+const protocol = "http";
+const hostname = "localhost";
+const port = 1447;
 const url = `${protocol}://${hostname}:${port}`;
 
-let corsOptions: Options = {};
-
-function getCorsOptions() {
-  return corsOptions;
-}
+// This variable gets set by each test case so that each test case uses the same
+// chain. If the chain is recreated during each test case, then the ETag
+// middleware will lose its cache of generated etags. Without this cache, the
+// tests will fail. Reason being the tests need to exercise subsequent request
+// to make sure the ETag middleare is doing its job. For example, one request
+// will be sent and it will be given an ETag header value. That value will be
+// cached by the ETag middleware. When a second request is sent, the ETag
+// middleware will:
+//
+// - hash the response the the request;
+// - use the hash to see if it exists in its cache; and
+// - send a 304 response if the hash exists.
+//
+const globals: {
+  current_chain: IHandler<Request, Promise<Response>> | null;
+} = {
+  current_chain: null,
+};
 
 const serverController = new AbortController();
 
@@ -41,715 +90,392 @@ Deno.serve(
   {
     port,
     hostname,
-    onListen: () => test(),
+    onListen: () => runTests(),
     signal: serverController.signal,
   },
   (request: Request): Promise<Response> => {
-    // Each test case sets a new `cors` variable, so we get the new value by calling this function
-    const cors = getCorsOptions();
+    if (!globals.current_chain) {
+      throw new Error(`Var \`globals.current_chain\` was not set by the test`);
+    }
 
-    // Now handle the request with the CORS middleware
-    return handleRequest(CORS(cors), request);
-  }
+    return globals.current_chain.handle(request);
+  },
 );
 
-function test() {
-  Deno.test("CSRF", async (t) => {
-    await t.step("Deno Tests (using Deno server and chain)", async (t) => {
+function runTests() {
+  Deno.test("ETag", async (t) => {
 
+    await t.step("Deno Tests (using the chain in a Deno server)", async (t) => {
       const testCases = getTestCases();
-      const path = "/";
 
       for (const [testCaseIndex, testCase] of testCases.entries()) {
-        const { cors, method, headers = {}, expected } = testCase;
+        const { chain, requests } = testCase;
 
-        corsOptions = cors;
+        // Set the current chain to be the chain in this test case so the server (outside this
+        // test function) can use it.
+        globals.current_chain = chain;
 
-        await t.step(
-          `${testCaseName(testCaseIndex)} ${method} ${path}`,
-          async () => {
-            const requestOptions: Record<string, unknown> = { method };
-            requestOptions.headers = headers ?? {};
+        for (
+          const [requestIndex, { request, expected_response }] of requests
+            .entries()
+        ) {
+          await t.step(
+            `${testCaseName(testCaseIndex)} ${request.method} ${request.path}`,
+            async () => {
+              const requestOptions: Record<string, unknown> = {
+                method: request.method,
+              };
 
-            const req = new Request(url + "/", requestOptions);
+              requestOptions.headers = request.headers ?? {};
+              const fullUrl = url + request.path + query(request.query);
 
-            const response = await fetch(req);
-            const actualHeaders = responseHeadersToKvp(response);
-            const actualHeadersModified: Record<string, string> = {};
+              const req = new Request(fullUrl, requestOptions);
 
-            const headersToIgnoreInAssertions = [
-              "date",
-              "content-length",
-              "content-type",
-            ];
+              const response = await fetch(req);
 
-            const expectedHeaders: Record<string, string> = {};
-
-            for (const key in expected.headers) {
-              if (headersToIgnoreInAssertions.includes(key.toLowerCase())) {
-                continue;
-              }
-
-              actualHeadersModified[key] = actualHeaders[key];
-              expectedHeaders[key] = expected.headers[key];
-            }
-
-            asserts.assertEquals(
-              actualHeadersModified,
-              expectedHeaders,
-              assertionMessage(`Test case at index ${testCaseIndex} failed in Deno Tests.\nResponse headers do not match expected.`),
-            );
-
-            asserts.assertEquals(
-              response.status === 200
-                ? await response.text()
-                : response.body,
-              response.status === 200 // 200 responses have "" response body
-                ? ""
-                : null,
-              assertionMessage(`Test case at index ${testCaseIndex} failed in Deno Tests.\nResponse body does not match expected.`),
-            );
-
-            asserts.assertEquals(
-              response.status,
-              expected.status,
-              assertionMessage(`Test case at index ${testCaseIndex} failed in Deno Tests.\nResponse status does not match expected.`),
-            );
-          },
-        );
+              await assert(
+                "Deno",
+                testCaseIndex,
+                requestIndex,
+                response,
+                expected_response,
+              );
+            },
+          );
+        }
       }
-    })
+    });
 
-    await t.step("Drash Tests (using chain only)", async (t) => {
+    await t.step("Drash Tests (using only the chain)", async (t) => {
       const testCases = getTestCases();
-      const path = "/";
 
       for (const [testCaseIndex, testCase] of testCases.entries()) {
-        const { cors, method, headers = {}, expected } = testCase;
+        const { chain, requests } = testCase;
 
-        corsOptions = cors;
+        for (
+          const [requestIndex, { request, expected_response }] of requests
+            .entries()
+        ) {
+          await t.step(
+            `${testCaseName(testCaseIndex)} ${request.method} ${request.path}`,
+            async () => {
+              const requestOptions: Record<string, unknown> = {
+                method: request.method,
+              };
 
-        await t.step(
-          `${testCaseName(testCaseIndex)} ${method} ${path}`,
-          async (t) => {
-            const requestOptions: Record<string, unknown> = { method };
-            requestOptions.headers = headers ?? {};
+              requestOptions.headers = request.headers ?? {};
+              const fullUrl = url + request.path + query(request.query);
 
-            const req = new Request(url + "/", requestOptions);
+              const req = new Request(fullUrl, requestOptions);
 
-            const chainResponse = await handleRequest(CORS(cors), req);
-            const actualHeaders = responseHeadersToKvp(chainResponse);
+              const response = await chain.handle(req);
 
-            asserts.assertEquals(
-              actualHeaders,
-              expected.headers,
-              assertionMessage(`Test case at index ${testCaseIndex} failed in Drash Tests.\Response status does not match expected.`),
-            );
-
-            asserts.assertEquals(
-              chainResponse.body,
-              null,
-              assertionMessage(`Test case at index ${testCaseIndex} failed in Drash Tests.\Response body does not match expected.`),
-            );
-
-            asserts.assertEquals(
-              chainResponse.status,
-              expected.status,
-              assertionMessage(`Test case at index ${testCaseIndex} failed in Drash Tests.\Response status does not match expected.`),
-            );
-          },
-        );
+              await assert(
+                "Drash",
+                testCaseIndex,
+                requestIndex,
+                response,
+                expected_response,
+              );
+            },
+          );
+        }
       }
-    })
+    });
   });
+}
+
+async function assert(
+  system: "Drash" | "Deno",
+  testCaseIndex: number,
+  requestIndex: number,
+  actualResponse: Response,
+  expectedResponse: Expected,
+) {
+  asserts.assertEquals(
+    await actualResponse.clone().text(),
+    expectedResponse.body,
+    assertionMessage(
+      `Test failed in ${system}` +
+        `\n\nResponse body does not match expected.` +
+        `\n\nSee getTestCases()[${testCaseIndex}].requests[${requestIndex}]`,
+    ),
+  );
+
+  asserts.assertEquals(
+    actualResponse.headers.get("etag"),
+    expectedResponse.headers.etag,
+    assertionMessage(
+      `Test failed in ${system}` +
+        `\n\nResponse "etag" header does not match expected.` +
+        `\n\nSee getTestCases()[${testCaseIndex}].requests[${requestIndex}]`,
+    ),
+  );
+
+  const actualLastModifiedDate = new Date(
+    actualResponse.headers.get("last-modified")!,
+  );
+
+  // The `last-modified` header should be dated as "right now" because
+  asserts.assertEquals(
+    actualLastModifiedDate.toISOString().replace(
+      /:[0-9]+\.+[0-9]+Z/,
+      "",
+    ),
+    date(),
+    assertionMessage(
+      `Test failed in ${system}` +
+        `\n\nResponse "last-modified" header does not match expected.` +
+        `\n\nSee getTestCases()[${testCaseIndex}].requests[${requestIndex}]`,
+    ),
+  );
+
+  asserts.assertEquals(
+    actualResponse.status,
+    expectedResponse.status,
+    assertionMessage(
+      `Test failed in ${system}` +
+        `\n\nResponse status does not match expected.` +
+        `\n\nSee getTestCases()[${testCaseIndex}].requests[${requestIndex}]`,
+    ),
+  );
+
+  asserts.assertEquals(
+    actualResponse.statusText,
+    expectedResponse.statusText,
+    assertionMessage(
+      `Test failed in ${system}` +
+        `\n\nResponse statusText does not match expected.` +
+        `\n\nSee getTestCases()[${testCaseIndex}].requests[${requestIndex}]`,
+    ),
+  );
 }
 
 /**
- * Get the response headers in key-value pair format.
- * @param response
- * @returns A key-value pair object.
+ * A date to use for asserting the "last-modified" header.
+ *
+ * Assertions for "last-modified" headers are done in the test. The assertion is
+ * just, "... the `last-modified` header should be NOW," so it is just doing a
+ * `new Date()` comparison with the seconds taken off.
  */
-function responseHeadersToKvp(response: Response): Record<string, string> {
-  const headers: Record<string, string> = {};
-
-  response.headers.forEach((v, k) => {
-    headers[k] = v;
-  });
-
-  return headers;
+function date() {
+  return new Date().toISOString().replace(/:[0-9]+\.+[0-9]+Z/, "");
 }
 
-function getTestCases(): {
-  cors: Options;
-  method: string;
-  headers?: Record<string, string>;
-  expected: {
-    status: number;
-    headers?: Record<string, string>;
-  };
-}[] {
+function getTestCases(): TestCase[] {
   return [
     {
-      cors: {},
-      method: "OPTIONS",
-      headers: {},
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-origin": "*",
-          "content-length": "0",
+      chain: chain({ middleware: [getEtagMiddleware()] }),
+      requests: [
+        // Send the first request
+        {
+          request: {
+            method: Method.GET,
+            path: "/",
+          },
+          expected_response: {
+            body: "Hello from Home.GET()!",
+            status: StatusCode.OK,
+            statusText: StatusDescription.OK,
+            headers: {
+              etag: `"16-SGVsbG8gZnJvbSBIb21lLkdFVCgpIQ=="`,
+            },
+          },
         },
-      },
+        // ETag middleware should keep track of the etag header it made above
+        {
+          request: {
+            headers: {
+              "if-none-match": `"16-SGVsbG8gZnJvbSBIb21lLkdFVCgpIQ=="`,
+            },
+            method: Method.GET,
+            path: "/",
+          },
+          expected_response: {
+            body: "", // Body should be empty when using `.text()`
+            headers: {
+              etag: `"16-SGVsbG8gZnJvbSBIb21lLkdFVCgpIQ=="`, // We should get the same etag back
+            },
+            status: StatusCode.NotModified, // Response should be considered "not modified"
+            statusText: StatusDescription.NotModified,
+          },
+        },
+        // If we send the same request without the `if-none-match` header, then ...
+        {
+          request: {
+            method: Method.GET,
+            path: "/",
+          },
+          expected_response: {
+            body: "Hello from Home.GET()!", // Body should be the body in the first request
+            headers: {
+              etag: `"16-SGVsbG8gZnJvbSBIb21lLkdFVCgpIQ=="`, // We should get the same etag back
+            },
+            status: StatusCode.OK, // Response is new so it SHOULD NOT be considered "not modified"
+            statusText: StatusDescription.OK,
+          },
+        },
+      ],
     },
     {
-      cors: {},
-      method: "OPTIONS",
-      headers: {
-        "access-control-request-headers": "x-yezzir",
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-origin": "*",
-          "content-length": "0",
-          "vary": "Access-Control-Request-Headers",
-        },
-      },
-    },
-    {
-      cors: {
-        allowed_origins: [
-          "http://test",
-          "https://woopwoop2",
-          /.*woopwoop3\.local.*/,
-          new RegExp("http(s)?://slowbro$"),
+      chain: chain({
+        middleware: [getEtagMiddleware({ logs: false })],
+        resources: [
+          class Users extends Chain.Resource {
+            public paths = ["/users/:id?"];
+            #number_of_requests_received = 0;
+
+            public GET(request: Chain.Request) {
+              const id = request.params.pathParam("id");
+
+              if (id) {
+                this.#number_of_requests_received++;
+
+                if (this.#number_of_requests_received === 3) {
+                  return;
+                }
+
+                return new Response(`Hello user #${id}`);
+              }
+
+              return new Response("Hello from Users.GET()!");
+            }
+          },
         ],
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "http://woopwoop",
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-origin": "false",
-          "content-length": "0",
-          "vary": "Origin",
+      }),
+      requests: [
+        // Send the first request with its etag that does not exist yet
+        {
+          request: {
+            method: Method.GET,
+            path: "/users",
+            headers: {
+              "if-none-match": `"17-SGVsbG8gZnJvbSBVc2Vycy5HRVQoKSE="`,
+            },
+          },
+          expected_response: {
+            body: "Hello from Users.GET()!", // This the etag did not exist, this response should contain the body
+            status: StatusCode.OK, // It should not have a 304 Not Modified
+            statusText: StatusDescription.OK, // It should not have a status code description associated with 304 Not Modified
+            headers: {
+              etag: `"17-SGVsbG8gZnJvbSBVc2Vycy5HRVQoKSE="`,
+            },
+          },
         },
-      },
-    },
-    {
-      cors: {
-        allowed_origins: [
-          "http://test",
-          "https://woopwoop2",
-          /.*woopwoop3\.local.*/,
-          new RegExp("http(s)?://slowbro$"),
-        ],
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "http://test",
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-origin": "http://test",
-          "content-length": "0",
-          "vary": "Origin",
+        {
+          request: {
+            method: Method.GET,
+            path: "/users",
+          },
+          expected_response: {
+            body: "Hello from Users.GET()!",
+            status: StatusCode.OK,
+            statusText: StatusDescription.OK,
+            headers: {
+              etag: `"17-SGVsbG8gZnJvbSBVc2Vycy5HRVQoKSE="`,
+            },
+          },
         },
-      },
-    },
-    {
-      cors: {
-        allowed_origins: [
-          "http://test",
-          "https://woopwoop2",
-          /.*woopwoop3\.local.*/,
-          new RegExp("http(s)?://slowbro$"),
-        ],
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "https://woopwoop2",
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-origin": "https://woopwoop2",
-          "content-length": "0",
-          "vary": "Origin",
+        // ETag middleware should keep track of the etag header it made above
+        {
+          request: {
+            headers: {
+              "if-none-match": `"17-SGVsbG8gZnJvbSBVc2Vycy5HRVQoKSE="`,
+            },
+            method: Method.GET,
+            path: "/users",
+          },
+          expected_response: {
+            body: "", // Body should be empty when using `.text()`
+            status: StatusCode.NotModified, // Response should be considered "not modified"
+            statusText: StatusDescription.NotModified,
+            headers: {
+              etag: `"17-SGVsbG8gZnJvbSBVc2Vycy5HRVQoKSE="`, // We should get the same etag back
+            },
+          },
         },
-      },
-    },
-    {
-      cors: {
-        allowed_origins: [
-          "http://test",
-          "https://woopwoop2",
-          /.*woopwoop3\.local.*/,
-          new RegExp("http(s)?://slowbro$"),
-        ],
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "http://woopwoop3.local",
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-origin": "http://woopwoop3.local",
-          "content-length": "0",
-          "vary": "Origin",
+        // If we hit the same endpoint and provide a path param, then ...
+        {
+          request: {
+            method: Method.GET,
+            path: "/users/1",
+          },
+          expected_response: {
+            body: "Hello user #1", // Body should be the one set in the `if (id) { ... }` conditional in the resource
+            status: StatusCode.OK, // Response is new so it SHOULD NOT be considered "not modified"
+            statusText: StatusDescription.OK,
+            headers: {
+              etag: `"d-SGVsbG8gdXNlciAjMQ=="`, // We should have a different etag
+            },
+          },
         },
-      },
-    },
-    {
-      cors: {
-        allowed_origins: [
-          "http://test",
-          "https://woopwoop2",
-          /.*woopwoop3\.local.*/,
-          new RegExp("http(s)?://slowbro$"),
-        ],
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "http://slowbro",
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-origin": "http://slowbro",
-          "content-length": "0",
-          "vary": "Origin",
+        // If we send the first request again with the "if-none-match" etag, then ...
+        {
+          request: {
+            method: Method.GET,
+            path: "/users",
+            headers: {
+              "if-none-match": `"17-SGVsbG8gZnJvbSBVc2Vycy5HRVQoKSE="`,
+            },
+          },
+          expected_response: {
+            body: "", // The body should be empty because the response to the request has not been modified
+            status: StatusCode.NotModified, // The response should have the Not Modified status
+            statusText: StatusDescription.NotModified,
+            headers: {
+              etag: `"17-SGVsbG8gZnJvbSBVc2Vycy5HRVQoKSE="`, // We should get the same etag back
+            },
+          },
         },
-      },
-    },
-    {
-      cors: {
-        allowed_origins: [
-          "http://test",
-          "https://woopwoop2",
-          /.*woopwoop3\.local.*/,
-          new RegExp("http(s)?://slowbro$"),
-        ],
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "http://slowbros", // The last `s` character should cause a `false` origin
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-origin": "false",
-          "content-length": "0",
-          "vary": "Origin",
-        },
-      },
-    },
-    {
-      cors: {
-        allowed_origins: [
-          "http://test",
-          "https://woopwoop2",
-          /.*woopwoop3\.local.*/,
-          new RegExp("http(s)?://slowbro$"),
-        ],
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "https://slowbro", // https should work too
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-origin": "https://slowbro",
-          "content-length": "0",
-          "vary": "Origin",
-        },
-      },
-    },
-    {
-      cors: {
-        allowed_origins: [
-          "http://test",
-          "https://woopwoop2",
-          /.*woopwoop3\.local.*/,
-          new RegExp("http(s)?://slowbro$"),
-        ],
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "https://slowbros", // The last `s` character should cause a `false` origin again
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-origin": "false",
-          "content-length": "0",
-          "vary": "Origin",
-        },
-      },
-    },
-    {
-      cors: {
-        options_success_status_code: 200, // This results in a "" response body in Deno
-      },
-      method: "OPTIONS",
-      expected: {
-        status: 200,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-origin": "*",
-          "content-length": "0",
-        },
-      },
-    },
-    {
-      cors: {
-        options_success_status_code: 200, // This results in a "" response body in Deno
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "https://woopwoop2",
-      },
-      expected: {
-        status: 200,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-origin": "*",
-          "content-length": "0",
-        },
-      },
-    },
-    {
-      cors: {
-        options_success_status_code: 200, // This results in a "" response body in Deno
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "http://woopwoop3.local",
-      },
-      expected: {
-        status: 200,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-origin": "*",
-          "content-length": "0",
-        },
-      },
-    },
-    {
-      cors: {
-        options_success_status_code: 200, // This results in a "" response body in Deno
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "http://slowbro",
-      },
-      expected: {
-        status: 200,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-origin": "*",
-          "content-length": "0",
-        },
-      },
-    },
-    {
-      cors: {
-        allowed_methods: [
-          "GET",
-        ],
-      },
-      method: "OPTIONS",
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET",
-          "access-control-allow-origin": "*",
-          "content-length": "0",
-        },
-      },
-    },
-    {
-      cors: {
-        allowed_methods: [
-          "GET",
-        ],
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "https://woopwoop2",
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET",
-          "access-control-allow-origin": "*",
-          "content-length": "0",
-        },
-      },
-    },
-    {
-      cors: {
-        allowed_methods: [
-          "GET",
-        ],
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "http://woopwoop3.local",
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET",
-          "access-control-allow-origin": "*",
-          "content-length": "0",
-        },
-      },
-    },
-    {
-      cors: {
-        allowed_methods: [
-          "GET",
-        ],
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "http://slowbro",
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET",
-          "access-control-allow-origin": "*",
-          "content-length": "0",
-        },
-      },
-    },
-    {
-      cors: {
-        max_age: 1000,
-      },
-      method: "OPTIONS",
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-origin": "*",
-          "access-control-max-age": "1000",
-          "content-length": "0",
-        },
-      },
-    },
-    {
-      cors: {
-        max_age: 1000,
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "https://woopwoop2",
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-origin": "*",
-          "access-control-max-age": "1000",
-          "content-length": "0",
-        },
-      },
-    },
-    {
-      cors: {
-        max_age: 1000,
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "http://woopwoop3.local",
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-origin": "*",
-          "access-control-max-age": "1000",
-          "content-length": "0",
-        },
-      },
-    },
-    {
-      cors: {
-        max_age: 1000,
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "http://slowbro",
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-origin": "*",
-          "access-control-max-age": "1000",
-          "content-length": "0",
-        },
-      },
-    },
-    {
-      cors: {
-        allowed_headers: ["x-hello", "x-nah-brah"],
-      },
-      method: "OPTIONS",
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-headers": "x-hello,x-nah-brah",
-          "access-control-allow-origin": "*",
-          "content-length": "0",
-        },
-      },
-    },
-    {
-      cors: {
-        allowed_headers: ["x-hello", "x-nah-brah"],
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "https://woopwoop2",
-        "access-control-request-headers": "x-test",
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-headers": "x-hello,x-nah-brah,x-test",
-          "access-control-allow-origin": "*",
-          "content-length": "0",
-          "vary": "Access-Control-Request-Headers",
-        },
-      },
-    },
-    {
-      cors: {
-        allowed_headers: ["x-hello", "x-nah-brah"],
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "http://woopwoop3.local",
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-headers": "x-hello,x-nah-brah",
-          "access-control-allow-origin": "*",
-          "content-length": "0",
-        },
-      },
-    },
-    {
-      cors: {
-        allowed_headers: ["x-hello", "x-nah-brah"],
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "http://slowbro",
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-allow-headers": "x-hello,x-nah-brah",
-          "access-control-allow-origin": "*",
-          "content-length": "0",
-        },
-      },
-    },
-    {
-      cors: {
-        exposed_headers: ["x-pose-headers", "x-anotha-one"],
-      },
-      method: "OPTIONS",
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-expose-headers": "x-pose-headers,x-anotha-one",
-          "access-control-allow-origin": "*",
-          "content-length": "0",
-        },
-      },
-    },
-    {
-      cors: {
-        exposed_headers: ["x-pose-headers", "x-anotha-one"],
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "https://woopwoop2",
-        "access-control-request-headers": "x-test",
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-expose-headers": "x-pose-headers,x-anotha-one",
-          "access-control-allow-origin": "*",
-          "content-length": "0",
-          "vary": "Access-Control-Request-Headers",
-        },
-      },
-    },
-    {
-      cors: {
-        exposed_headers: ["x-pose-headers", "x-anotha-one"],
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "http://woopwoop3.local",
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-expose-headers": "x-pose-headers,x-anotha-one",
-          "access-control-allow-origin": "*",
-          "content-length": "0",
-        },
-      },
-    },
-    {
-      cors: {
-        exposed_headers: ["x-pose-headers", "x-anotha-one"],
-      },
-      method: "OPTIONS",
-      headers: {
-        origin: "http://slowbro",
-      },
-      expected: {
-        status: 204,
-        headers: {
-          "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
-          "access-control-expose-headers": "x-pose-headers,x-anotha-one",
-          "access-control-allow-origin": "*",
-          "content-length": "0",
-        },
-      },
+      ],
     },
   ];
+}
+
+/**
+ * Helper function to use a decorated ETag middleware (with logs for debugging
+ * purposes) or the original ETag middleware.
+ */
+function getEtagMiddleware(
+  options: Options & { logs?: boolean } = defaultOptions,
+) {
+  if (!options.logs) {
+    return ETag(options);
+  }
+
+  return class ETagLogged extends ETagMiddleware {
+    constructor() {
+      super(options);
+    }
+
+    ALL(request: Request): Promise<Response> {
+      console.log({ request });
+      return Promise
+        .resolve()
+        .then(() => this.next<Response>(request))
+        .then((response) => ({ request, response }))
+        .then((context) => {
+          console.log(`Calling handleIfResponseEmpty()`);
+          const ret = this.handleIfResponseEmpty(context);
+          if (ret.done) {
+            console.log(`done`);
+          }
+          return ret;
+        })
+        .then((context) => this.createEtagHeader(context))
+        .then((context) => {
+          console.log(`Calling handleEtagMatchesRequestIfNoneMatchHeader()`);
+          const ret = this.handleEtagMatchesRequestIfNoneMatchHeader(context);
+          if (ret.done) {
+            console.log(`done`);
+          }
+          return ret;
+        })
+        .then((context) => {
+          console.log(`Calling sendResponse()`);
+          console.log({ response: context.response });
+          return this.sendResponse(context);
+        });
+    }
+  };
 }
