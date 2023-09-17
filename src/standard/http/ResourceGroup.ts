@@ -94,7 +94,7 @@ class Builder implements IBuilder {
    * Set the path prefixes for all resources in this group.
    * @param pathPrefixes The path prefixes the resources will use.
    * @returns This instance so you can chain more methods.
-   * ---
+   *
    * @example
    * ```ts
    * class Coffees extends Resource {
@@ -117,7 +117,7 @@ class Builder implements IBuilder {
    * Set the middlware for all resources in this group.
    * @param middleware The middleware the resources will use.
    * @returns This instance so you can chain more methods.
-   * ---
+   *
    * @example
    * ```ts
    * class Coffees extends Resource { ... }

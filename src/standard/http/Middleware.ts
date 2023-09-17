@@ -126,7 +126,7 @@ class Middleware implements IRequestMethods {
     return this.#delegate(input, "TRACE");
   }
 
-  #delegate(input: unknown, method: MethodOf<Resource>): unknown {
+  #delegate(input: unknown, method: MethodOf<Middleware>): unknown {
     if (!this.original) {
       throw new Error("Failed to create middleware. No original.");
     }

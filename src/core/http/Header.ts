@@ -19,10 +19,19 @@
  * Drash. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import type { ResponseStatusCode } from "./ResponseStatusCode.ts";
-import type { ResponseStatusDescription } from "./ResponseStatusDescription.ts";
-
-export type ResponseStatus = {
-  readonly code: ResponseStatusCode;
-  readonly description: ResponseStatusDescription;
-};
+export const Header = {
+  AccessControlAllowCredentials: "Access-Control-Allow-Credentials",
+  AccessControlAllowHeaders: "Access-Control-Allow-Headers",
+  AccessControlAllowMethods: "Access-Control-Allow-Methods",
+  AccessControlAllowOrigin: "Access-Control-Allow-Origin",
+  AccessControlExposeHeaders: "Access-Control-Expose-Headers",
+  AccessControlMaxAge: "Access-Control-Max-Age",
+  AccessControlRequestHeaders: "Access-Control-Request-Headers",
+  AccessControlRequestMethod: "Acces-Control-Request-Method",
+  ContentLength: "Content-Length",
+  ETag: "ETag",
+  IfMatch: "If-Match",
+  IfNoneMatch: "If-None-Match",
+  LastModified: "Last-Modified",
+  Vary: "Vary",
+} as const;

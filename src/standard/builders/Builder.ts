@@ -19,10 +19,9 @@
  * Drash. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import type { ResponseStatusCode } from "./ResponseStatusCode.ts";
-import type { ResponseStatusDescription } from "./ResponseStatusDescription.ts";
+interface Builder<C> {
+  build(): C;
+}
+// FILE MARKER - PUBLIC API ////////////////////////////////////////////////////
 
-export type ResponseStatus = {
-  readonly code: ResponseStatusCode;
-  readonly description: ResponseStatusDescription;
-};
+export type { Builder };

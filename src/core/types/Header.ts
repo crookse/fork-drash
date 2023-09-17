@@ -19,10 +19,6 @@
  * Drash. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import type { ResponseStatusCode } from "./ResponseStatusCode.ts";
-import type { ResponseStatusDescription } from "./ResponseStatusDescription.ts";
+import { Header } from "../http/Header.ts";
 
-export type ResponseStatus = {
-  readonly code: ResponseStatusCode;
-  readonly description: ResponseStatusDescription;
-};
+export type Header = (typeof Header)[keyof typeof Header];

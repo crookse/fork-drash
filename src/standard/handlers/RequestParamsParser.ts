@@ -38,6 +38,8 @@ type Output = {
   resource: IResource;
 };
 
+type WithParams = Request & { params: Params };
+
 class RequestParamsParser extends Handler<Input, Promise<Output>> {
   handle(input: Input): Promise<Output> {
     return Promise
@@ -118,4 +120,4 @@ class Params {
 
 // FILE MARKER - PUBLIC API ////////////////////////////////////////////////////
 
-export { type Input, type Output, RequestParamsParser };
+export { type Input, type Output, RequestParamsParser, type WithParams };
