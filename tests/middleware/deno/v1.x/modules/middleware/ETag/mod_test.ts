@@ -136,6 +136,7 @@ function runTests() {
               await assert(
                 "Deno",
                 testCaseIndex,
+                req,
                 requestIndex,
                 response,
                 expected_response,
@@ -173,6 +174,7 @@ function runTests() {
               await assert(
                 "Drash",
                 testCaseIndex,
+                req,
                 requestIndex,
                 response,
                 expected_response,
@@ -188,6 +190,7 @@ function runTests() {
 async function assert(
   system: "Drash" | "Deno",
   testCaseIndex: number,
+  request: Request,
   requestIndex: number,
   actualResponse: Response,
   expectedResponse: Expected,
@@ -196,9 +199,10 @@ async function assert(
     await actualResponse.clone().text(),
     expectedResponse.body,
     assertionMessage(
-      `Test failed in ${system}` +
-        `\n\nResponse body does not match expected.` +
-        `\n\nSee getTestCases()[${testCaseIndex}].requests[${requestIndex}]`,
+      `ETag test failed in ${system}:`,
+      `\n  Response body does not match expected.`,
+      `\nSee test case index [${testCaseIndex}] request index [${requestIndex}] containing:`,
+      `\n  ${request.method} ${request.url.replace(url, '')}`,
     ),
   );
 
@@ -206,9 +210,10 @@ async function assert(
     actualResponse.headers.get("etag"),
     expectedResponse.headers?.etag,
     assertionMessage(
-      `Test failed in ${system}` +
-        `\n\nResponse "etag" header does not match expected.` +
-        `\n\nSee getTestCases()[${testCaseIndex}].requests[${requestIndex}]`,
+      `ETag test failed in ${system}:`,
+      `\n  Response "etag" header does not match expected.`,
+      `\nSee test case index [${testCaseIndex}] request index [${requestIndex}] containing:`,
+      `\n  ${request.method} ${request.url.replace(url, '')}`,
     ),
   );
 
@@ -224,9 +229,10 @@ async function assert(
     ),
     date(),
     assertionMessage(
-      `Test failed in ${system}` +
-        `\n\nResponse "last-modified" header does not match expected.` +
-        `\n\nSee getTestCases()[${testCaseIndex}].requests[${requestIndex}]`,
+      `ETag test failed in ${system}:`,
+      `\n  Response "last-modified" header does not match expected.`,
+      `\nSee test case index [${testCaseIndex}] request index [${requestIndex}] containing:`,
+      `\n  ${request.method} ${request.url.replace(url, '')}`,
     ),
   );
 
@@ -234,9 +240,10 @@ async function assert(
     actualResponse.status,
     expectedResponse.status,
     assertionMessage(
-      `Test failed in ${system}` +
-        `\n\nResponse status does not match expected.` +
-        `\n\nSee getTestCases()[${testCaseIndex}].requests[${requestIndex}]`,
+      `ETag test failed in ${system}:`,
+      `\n  Response status does not match expected.`,
+      `\nSee test case index [${testCaseIndex}] request index [${requestIndex}] containing:`,
+      `\n  ${request.method} ${request.url.replace(url, '')}`,
     ),
   );
 
