@@ -68,13 +68,13 @@ const url = `${protocol}://${hostname}:${port}`;
 // This variable gets set by each test case so that each test case uses the same
 // chain. If the chain is recreated during each test case, then the ETag
 // middleware will lose its cache of generated etags. Without this cache, the
-// tests will fail. Reason being the tests need to exercise subsequent request
+// tests will fail. Reason being the tests need to exercise subsequent requests
 // to make sure the ETag middleare is doing its job. For example, one request
 // will be sent and it will be given an ETag header value. That value will be
 // cached by the ETag middleware. When a second request is sent, the ETag
 // middleware will:
 //
-// - hash the response the the request;
+// - hash the response of the request;
 // - use the hash to see if it exists in its cache; and
 // - send a 304 response if the hash exists.
 //
