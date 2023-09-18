@@ -46,7 +46,7 @@ type TestCase = {
   chain: IHandler<Request, Promise<Response>>;
   requests: {
     request: RequestInfo;
-    expected_response: Expected;
+    expected_response: ExpectedCombined;
   }[];
 };
 
@@ -63,6 +63,8 @@ type Expected =
     body: unknown;
     headers?: Record<string, string>;
   };
+
+type ExpectedCombined = Expected | { deno: Expected; drash: Expected };
 
 const protocol = "http";
 const hostname = "localhost";
@@ -130,9 +132,12 @@ function runTests() {
               await assert(
                 "Deno",
                 testCaseIndex,
+                req,
                 requestIndex,
                 response,
-                expected_response,
+                ("deno" in expected_response)
+                  ? expected_response.deno
+                  : expected_response,
               );
             },
           );
@@ -169,9 +174,12 @@ function runTests() {
               await assert(
                 "Drash",
                 testCaseIndex,
+                req,
                 requestIndex,
                 response,
-                expected_response,
+                ("drash" in expected_response)
+                  ? expected_response.drash
+                  : expected_response,
               );
             },
           );
@@ -184,6 +192,7 @@ function runTests() {
 async function assert(
   system: "Drash" | "Deno",
   testCaseIndex: number,
+  request: Request,
   requestIndex: number,
   actualResponse: Response,
   expectedResponse: Expected,
@@ -192,9 +201,10 @@ async function assert(
     await actualResponse.clone().text(),
     expectedResponse.body,
     assertionMessage(
-      `Test failed in ${system}` +
-        `\n\nResponse body does not match expected.` +
-        `\n\nSee getTestCases()[${testCaseIndex}].requests[${requestIndex}]`,
+      `AcceptHeader test failed in ${system}:`,
+      `\n  Response body does not match expected.`,
+      `\nSee test case index [${testCaseIndex}] request index [${requestIndex}] containing:`,
+      `\n  ${request.method} ${request.url.replace(url, '')}`,
     ),
   );
 
@@ -202,9 +212,10 @@ async function assert(
     actualResponse.status,
     expectedResponse.status,
     assertionMessage(
-      `Test failed in ${system}` +
-        `\n\nResponse status does not match expected.` +
-        `\n\nSee getTestCases()[${testCaseIndex}].requests[${requestIndex}]`,
+      `AcceptHeader test failed in ${system}:`,
+      `\n  Response status does not match expected.`,
+      `\nSee test case index [${testCaseIndex}] request index [${requestIndex}] containing:`,
+      `\n  ${request.method} ${request.url.replace(url, '')}`,
     ),
   );
 
@@ -212,9 +223,10 @@ async function assert(
     actualResponse.statusText,
     expectedResponse.statusText,
     assertionMessage(
-      `Test failed in ${system}` +
-        `\n\nResponse statusText does not match expected.` +
-        `\n\nSee getTestCases()[${testCaseIndex}].requests[${requestIndex}]`,
+      `AcceptHeader test failed in ${system}:`,
+      `\n  Response statusText does not match expected.`,
+      `\nSee test case index [${testCaseIndex}] request index [${requestIndex}] containing:`,
+      `\n  ${request.method} ${request.url.replace(url, '')}`,
     ),
   );
 }
@@ -270,62 +282,69 @@ function getTestCases(): TestCase[] {
               "The server did not generate a response matching the request's Accept header",
           },
         },
-        // {
-        //   request: {
-        //     method: Method.POST,
-        //     path: "/accept-header",
-        //     headers: {
-        //       accept: 'application/json',
-        //     }
-        //   },
-        //   expected_response: {
-        //     status: 200,
-        //     statusText: "OK",
-        //     body: `{"message":"Hello from POST."}`,
-        //   },
-        // },
-        // {
-        //   request: {
-        //     method: Method.PUT,
-        //     path: "/accept-header",
-        //     headers: {
-        //       accept: "*/*"
-        //     }
-        //   },
-        //   expected_response: {
-        //     status: 501,
-        //     statusText: "Not Implemented",
-        //     body: "Not Implemented",
-        //   }
-        // },
-        // {
-        //   request: {
-        //     method: Method.DELETE,
-        //     path: "/accept-header",
-        //     headers: {
-        //       accept: '*/*',
-        //     }
-        //   },
-        //   expected_response: {
-        //     status: 500,
-        //     statusText: "Internal Server Error",
-        //     body: "Hey, I'm the DELETE endpoint. Errrr.",
-        //   },
-        // },
-        // {
-        //   request: {
-        //     method: Method.PATCH,
-        //     path: "/accept-header",
-        //     headers: {
-        //       accept: '*/*',
-        //     }
-        //   },
-        //   expected_response: {
-        //     status: 405,
-        //     statusText: "Method Not Allowed",
-        //     body: "Method Not Allowed",
-        //   },
-        // },
+        {
+          request: {
+            method: Method.POST,
+            path: "/accept-header",
+            headers: {
+              accept: 'application/json',
+            }
+          },
+          expected_response: {
+            status: 200,
+            statusText: "OK",
+            body: `{"message":"Hello from POST."}`,
+          },
+        },
+        {
+          request: {
+            method: Method.PUT,
+            path: "/accept-header",
+            headers: {
+              accept: "*/*"
+            }
+          },
+          expected_response: {
+            status: 501,
+            statusText: "Not Implemented",
+            body: "Not Implemented",
+          }
+        },
+        {
+          request: {
+            method: Method.DELETE,
+            path: "/accept-header",
+            headers: {
+              accept: '*/*',
+            }
+          },
+          expected_response: {
+              deno: {
+                status: 200,
+                statusText: "OK", // Deno magically sets this
+                body: "Deleted!",
+              },
+              drash: {
+                status: 200,
+                statusText: "", // No statusText was set in the resource, so we expect blank. We do not magically set it.
+                body: "Deleted!",
+              }
+            }
+        },
+        {
+          request: {
+            method: Method.PATCH,
+            path: "/accept-header",
+            headers: {
+              accept: '*/*',
+            }
+          },
+          expected_response: {
+            status: 405,
+            statusText: "Method Not Allowed",
+            body: "Method Not Allowed",
+          },
+        },
       ],
     },
   ];
