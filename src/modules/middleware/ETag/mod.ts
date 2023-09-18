@@ -7,20 +7,19 @@ import { StatusCode } from "../../../core/http/response/StatusCode.ts";
 import { StatusDescription } from "../../../core/http/response/StatusDescription.ts";
 import { HTTPError } from "../../../core/errors/HTTPError.ts";
 
-const defaultOptions: Options = {
-  hash_length: 27,
-  weak: false,
-};
-
 type Options = {
+  /** The maximum length of the ETag header. */
+  etag_max_length?: number;
+  /** Add the "W/" directive to all generated ETag headers? */
   weak?: boolean;
-  hash_length?: number;
 };
 
 type Context = {
   request: Request;
   response: Response;
+  /** The Etag header for this context's response. */
   etag?: string;
+  /** A flag each handler function can use to see if it should or should not process the context further. */
   done?: boolean;
 };
 
@@ -29,25 +28,36 @@ type CachedResource = {
   [Header.LastModified]: string;
 };
 
+const defaultOptions: Options = {
+  etag_max_length: 27,
+  weak: false,
+};
+
 class ETagMiddleware extends Middleware {
   #cache: Record<string, CachedResource> = {};
   #default_etag = '"0-2jmj7l5rSw0yVb/vlWAYkK/YBwk"';
   #options: Options;
 
-  constructor(options: Options) {
+  /**
+   * Construct the middleware that handles ETag and ETag-related headers.
+   *
+   * @param options (Optional) See {@link Options}.
+   */
+  constructor(options: Options = defaultOptions) {
     super();
 
+    // TODO(crookse) Check if the options are correct before setting them.
     this.#options = {
       ...defaultOptions,
       ...options,
     };
   }
 
-  ALL(request: Request): Promise<Response> {
+  public ALL(request: Request): Promise<Response> {
     return Promise
       .resolve()
       .then(() => this.handleEtagMatchesRequestIfMatchHeader(request))
-      .then(() => this.next<Response>(request))
+      .then(() => super.next<Response>(request))
       .then((response) => ({ request, response }))
       .then((context) => this.handleIfResponseEmpty(context))
       .then((context) => this.createEtagHeader(context))
@@ -57,6 +67,11 @@ class ETagMiddleware extends Middleware {
       .then((context) => this.sendResponse(context));
   }
 
+  /**
+   * Create the ETag header from the response's body.
+   * @param context The context containing all data this middleware requires.
+   * @returns The context
+   */
   protected createEtagHeader(context: Context) {
     if (context.done) {
       return context;
@@ -220,14 +235,17 @@ class ETagMiddleware extends Middleware {
 }
 
 /**
- * Create the ETag middleware.
- * @param options (optional) Options to use for creating the ETag header.
- * @returns The middleware class that can be instantiated. WHen it is
- * instantiated, it instantiate with the provided `options` or default to its
- * default options if no options are provided.
+ * Get the middleware class that handles ETag and ETag-related headers.
+ *
+ * @param options (Optional) Options to control the middleware's behavior. See
+ * {@link Options} for details.
+ *
+ * @returns The middleware class that can be instantiated. When it is
+ * instantiated, it instantiates with the provided `options`. If no options are
+ * provided, it uses its default options.
  */
 function ETag(options: Options = defaultOptions) {
-  return class DefaultEtagMiddleware extends ETagMiddleware {
+  return class DefaultETag extends ETagMiddleware {
     constructor() {
       super(options);
     }

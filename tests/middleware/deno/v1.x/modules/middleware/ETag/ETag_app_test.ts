@@ -54,10 +54,10 @@ type RequestInfo =
   };
 
 type Expected =
-  & Required<ResponseInit>
+  & ResponseInit
   & {
     body: unknown;
-    headers: Record<string, string>;
+    headers?: Record<string, string>;
   };
 
 const protocol = "http";
@@ -204,7 +204,7 @@ async function assert(
 
   asserts.assertEquals(
     actualResponse.headers.get("etag"),
-    expectedResponse.headers.etag,
+    expectedResponse.headers?.etag,
     assertionMessage(
       `Test failed in ${system}` +
         `\n\nResponse "etag" header does not match expected.` +
