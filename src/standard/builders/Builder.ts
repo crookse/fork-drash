@@ -19,7 +19,14 @@
  * Drash. If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * @template C The class that will be instantiated and returned when calling the
+ * `build()` method.
+ */
 interface Builder<C> {
+  /**
+   * Instantiate the class and return it.
+   */
   build(): C;
 }
 // FILE MARKER - PUBLIC API ////////////////////////////////////////////////////

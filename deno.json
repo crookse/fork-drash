@@ -21,7 +21,8 @@
   "tasks": {
     "build:all:ci": "deno task build:intermediary:ci && deno task build:esm && deno task build:cjs",
     "build:all": "./scripts/build_all",
-    "build:check": "deno task yarn:clean && yarn install && deno task build:all && deno task test:all",
+    "build:check": "deno task check:file-headers && deno task yarn:clean && yarn install && deno task build:all && deno task test:all",
+    "check:file-headers": "deno run --allow-read ./scripts/check_file_headers.ts",
     "build:cjs": "yarn tsc --project tsconfig.build.cjs.json",
     "build:esm": "yarn tsc --project tsconfig.build.esm.json",
     "build:intermediary:ci": "deno fmt && deno run -A ./scripts/lib_builder/build_esm_lib.ts --debug --workspace=./.drashland/lib/intermediary --copy-files=./src",

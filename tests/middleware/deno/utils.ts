@@ -63,6 +63,7 @@ export function query(kvp?: Record<string, string>) {
 /**
  * Get a chain with a simple `/` path resource. Middleware and resources can be
  * added to it if passed in the `options` param.
+ *
  * @param options
  * @returns The `RequestChain`'s handler.
  *
