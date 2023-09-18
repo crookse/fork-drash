@@ -21,7 +21,8 @@
 
 import { IRequestMethods, IResource } from "../../core/Interfaces.ts";
 import { MethodOf } from "../../core/Types.ts";
-import { Resource } from "../../core/http/Resource.ts";
+import { HTTPError } from "../../core/errors/HTTPError.ts";
+import { Status } from "../../core/http/response/Status.ts";
 
 // Imports > Core
 
@@ -37,20 +38,29 @@ class Middleware implements IRequestMethods {
   public next<ReturnValue>(input: unknown): ReturnValue {
     if (
       !input ||
-      typeof input !== "object" ||
+      (typeof input !== "object") ||
       !("method" in input) ||
-      typeof input.method !== "string" ||
-      typeof this.original !== "object" ||
-      !(input.method in this.original) ||
+      (typeof input.method !== "string") ||
       !this.original ||
-      typeof this.original[input.method as MethodOf<IResource>] !== "function"
+      (typeof this.original !== "object") ||
+      !(input.method in this.original) ||
+      (typeof this.original[input.method as MethodOf<IResource>]) !== "function"
     ) {
       throw new Error("Middleware could not process request further");
     }
 
     const method = input.method as MethodOf<IRequestMethods>;
 
-    return this.original[method](input) as ReturnValue;
+    const response = this.original[method](input);
+
+    if (!response) {
+      throw new HTTPError(
+        Status.InternalServerError,
+        "The server was unable to generate a response",
+      );
+    }
+
+    return response as ReturnValue;
   }
 
   /**
