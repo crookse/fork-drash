@@ -104,7 +104,6 @@ Deno.serve(
 
 function runTests() {
   Deno.test("ETag", async (t) => {
-
     await t.step("Deno Tests (using the chain in a Deno server)", async (t) => {
       const testCases = getTestCases();
 
@@ -202,7 +201,7 @@ async function assert(
       `ETag test failed in ${system}:`,
       `\n  Response body does not match expected.`,
       `\nSee test case index [${testCaseIndex}] request index [${requestIndex}] containing:`,
-      `\n  ${request.method} ${request.url.replace(url, '')}`,
+      `\n  ${request.method} ${request.url.replace(url, "")}`,
     ),
   );
 
@@ -213,7 +212,7 @@ async function assert(
       `ETag test failed in ${system}:`,
       `\n  Response "etag" header does not match expected.`,
       `\nSee test case index [${testCaseIndex}] request index [${requestIndex}] containing:`,
-      `\n  ${request.method} ${request.url.replace(url, '')}`,
+      `\n  ${request.method} ${request.url.replace(url, "")}`,
     ),
   );
 
@@ -232,7 +231,7 @@ async function assert(
       `ETag test failed in ${system}:`,
       `\n  Response "last-modified" header does not match expected.`,
       `\nSee test case index [${testCaseIndex}] request index [${requestIndex}] containing:`,
-      `\n  ${request.method} ${request.url.replace(url, '')}`,
+      `\n  ${request.method} ${request.url.replace(url, "")}`,
     ),
   );
 
@@ -243,7 +242,7 @@ async function assert(
       `ETag test failed in ${system}:`,
       `\n  Response status does not match expected.`,
       `\nSee test case index [${testCaseIndex}] request index [${requestIndex}] containing:`,
-      `\n  ${request.method} ${request.url.replace(url, '')}`,
+      `\n  ${request.method} ${request.url.replace(url, "")}`,
     ),
   );
 
