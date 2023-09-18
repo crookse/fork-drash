@@ -36,7 +36,7 @@
     "test:compat:deno:concurrency": "deno test tests/compat/deno/*/concurrency",
     "test:compat:deno": "deno test tests/compat/deno --ignore='**/concurrency/*.ts'",
     "test:compat:node": "yarn jest --config jest.config.node.ts tests/compat/node",
-    "test:middleware:deno": "deno test tests/middleware/deno",
+    "test:middleware:deno": "deno test tests/middleware/deno --allow-net",
     "test:unit": "deno test tests/unit",
     "validate:file-headers": "deno run --allow-read ./scripts/check_file_headers.ts",
     "yarn:clean": "rm -rf node_modules && rm yarn.lock || true",
