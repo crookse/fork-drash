@@ -4,14 +4,13 @@ import { Middleware } from "../../../standard/http/Middleware.ts";
 
 type Options = {
   fail_on_accept_header_mismatch: boolean;
-}
+};
 
 const defaultOptions: Options = {
   fail_on_accept_header_mismatch: false,
-}
+};
 
 export class AcceptHeader extends Middleware {
-
   #options: Options = defaultOptions;
 
   constructor(options: Options) {
@@ -28,7 +27,7 @@ export class AcceptHeader extends Middleware {
     if (!response) {
       throw new HTTPError(
         Status.InternalServerError,
-        "The server was unable to generate a response"
+        "The server was unable to generate a response",
       );
     }
 
@@ -39,13 +38,18 @@ export class AcceptHeader extends Middleware {
     }
 
     if (!request.headers.has("accept")) {
-      throw new HTTPError(Status.BadRequest, `Request is missing 'Accept' header`);
+      throw new HTTPError(
+        Status.BadRequest,
+        `Request is missing 'Accept' header`,
+      );
     }
 
     if (!result) {
       throw new HTTPError(
         Status.UnprocessableEntity,
-        `The server cannot generate a response matching the value(s) in the request's 'Accept' header: ${request.headers.get("accept")}`
+        `The server cannot generate a response matching the value(s) in the request's 'Accept' header: ${
+          request.headers.get("accept")
+        }`,
       );
     }
 

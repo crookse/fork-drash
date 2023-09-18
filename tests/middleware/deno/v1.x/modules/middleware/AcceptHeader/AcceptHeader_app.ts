@@ -19,7 +19,7 @@
  * Drash. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { AcceptHeader } from "../../../../../../../src/modules/middleware/AcceptHeader/mod.ts"
+import { AcceptHeader } from "../../../../../../../src/modules/middleware/AcceptHeader/mod.ts";
 import { catchError } from "../../../../utils.ts";
 import { HTTPError } from "../../../../../../../src/core/errors/HTTPError.ts";
 import { ResourceGroup } from "../../../../../../../src/standard/http/ResourceGroup.ts";
@@ -40,8 +40,8 @@ class Home extends Chain.Resource {
   public POST(_request: Request) {
     return new Response(JSON.stringify({ message: "Hello from POST." }), {
       headers: {
-        "content-type": "application/json"
-      }
+        "content-type": "application/json",
+      },
     });
   }
 

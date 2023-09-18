@@ -34,7 +34,7 @@ Deno.test("Native - Using Request/Response", async (t) => {
           method,
           headers: {
             accept,
-          }
+          },
         });
 
         const response = await handleRequest(req);
@@ -69,15 +69,16 @@ function testCases() {
   return [
     {
       method: "GET",
-      accept: 'application/json',
+      accept: "application/json",
       expected: {
         status: 422,
-        body: "The server cannot generate a response matching the value(s) in the request's 'Accept' header: application/json",
+        body:
+          "The server cannot generate a response matching the value(s) in the request's 'Accept' header: application/json",
       },
     },
     {
       method: "POST",
-      accept: 'application/json',
+      accept: "application/json",
       expected: {
         status: 200,
         body: `{"message":"Hello from POST."}`,
@@ -85,7 +86,7 @@ function testCases() {
     },
     {
       method: "PUT",
-      accept: '*/*',
+      accept: "*/*",
       expected: {
         status: 501,
         body: "Not Implemented",
@@ -93,7 +94,7 @@ function testCases() {
     },
     {
       method: "DELETE",
-      accept: '*/*',
+      accept: "*/*",
       expected: {
         status: 500,
         body: "Hey, I'm the DELETE endpoint. Errrr.",
@@ -101,7 +102,7 @@ function testCases() {
     },
     {
       method: "PATCH",
-      accept: '*/*',
+      accept: "*/*",
       expected: {
         status: 405,
         body: "Method Not Allowed",
