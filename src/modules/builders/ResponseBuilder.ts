@@ -1,6 +1,10 @@
 import { Builder } from "../../standard/builders/Builder.ts";
 
 /**
+ * A builder to help build a `Respone` object. This is useful if the response's
+ * data needs to be modified throughout a lifecycle, but not instantiated into a
+ * `Response` object until required.
+ *
  * @example
  * ```ts
  * const builder = new ResponseBuilder();
@@ -27,7 +31,7 @@ import { Builder } from "../../standard/builders/Builder.ts";
  * })
  * ```
  */
-export class ResponseBuilder implements Builder<Response> {
+class ResponseBuilder implements Builder<Response> {
   #body: BodyInit | null = null;
   #headers = new Headers();
   #response_init: ResponseInit = {
@@ -35,11 +39,31 @@ export class ResponseBuilder implements Builder<Response> {
     statusText: "OK",
   };
 
+  /**
+   * Set the body the built response will use as its {@link BodyInit}.
+   *
+   * @param body See {@link BodyInit}.
+   *
+   * @returns This instance.
+   *
+   * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Response/body}
+   */
   body(body: BodyInit | null) {
     this.#body = body;
     return this;
   }
 
+  /**
+   * Set the headers (using key-value pairs) the built response will use as its
+   * {@link ResponseInit.headers}.
+   *
+   * @param headers A key-value pair of headers where the key is the header name
+   * and the value is the header value.
+   *
+   * @returns This instance.
+   *
+   * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Response/headers}
+   */
   headers(headers: Record<string, string>) {
     for (const [k, v] of Object.entries(headers)) {
       this.#headers.set(k, v);
@@ -48,11 +72,30 @@ export class ResponseBuilder implements Builder<Response> {
     return this;
   }
 
+  /**
+   * Set the status the built response will use as its
+   * {@link ResponseInit.status}.
+   *
+   * @param status See {@link ResponseInit.status}.
+   *
+   * @returns This instance.
+   *
+   * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Response/status}
+   */
   status(status: number) {
     this.#response_init.status = status;
     return this;
   }
 
+  /**
+   * Set the {@link ResponseInit.statuText} property.
+   *
+   * @param statusText See {@link ResponseInit.statuText}.
+   *
+   * @returns This instance.
+   *
+   * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Response/statusText}
+   */
   statusText(statusText: string) {
     this.#response_init.statusText = statusText;
     return this;
@@ -68,9 +111,15 @@ export class ResponseBuilder implements Builder<Response> {
 
 /**
  * Get a {@link Response} builder.
+ *
  * @returns A response builder.
+ *
  * @see {@link ResponseBuilder} for implementation details.
  */
-export function response() {
+function response() {
   return new ResponseBuilder();
 }
+
+// FILE MARKER - PUBLIC API ////////////////////////////////////////////////////
+
+export { response, ResponseBuilder };
