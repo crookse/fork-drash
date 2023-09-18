@@ -58,6 +58,13 @@ class RequestBuilder {
   }
 }
 
+/**
+ * Get a {@link Request} builder.
+ * 
+ * @returns A response builder.
+ * 
+ * @see {@link RequestBuilder} for implementation details.
+ */
 export function request() {
   return new RequestBuilder();
 }
