@@ -28,7 +28,6 @@ import {
   testCaseName,
 } from "../../../../utils.ts";
 import { Method } from "../../../../../../../src/core/http/request/Method.ts";
-import { IHandler } from "../../../../../../../src/core/Interfaces.ts";
 import {
   AcceptHeader,
   AcceptHeaderMiddleware,
@@ -41,9 +40,10 @@ import { HTTPError } from "../../../../../../../src/core/errors/HTTPError.ts";
 import { Status } from "../../../../../../../src/core/http/response/Status.ts";
 import { StatusCode } from "../../../../../../../src/core/http/response/StatusCode.ts";
 import { StatusDescription } from "../../../../../../../src/core/http/response/StatusDescription.ts";
+import { Handler } from "../../../../../../../src/standard/handlers/Handler.ts";
 
 type TestCase = {
-  chain: IHandler<Request, Promise<Response>>;
+  chain: Handler;
   requests: {
     request: RequestInfo;
     expected_response: ExpectedCombined;
@@ -74,7 +74,7 @@ const url = `${protocol}://${hostname}:${port}`;
 // This variable gets set by each test case so that each test case uses the same
 // chain
 const globals: {
-  current_chain: IHandler<Request, Promise<Response>> | null;
+  current_chain: Handler | null;
 } = {
   current_chain: null,
 };
@@ -94,7 +94,7 @@ Deno.serve(
     }
 
     return globals.current_chain
-      .handle(request)
+      .handle<Response>(request)
       .catch(catchError);
   },
 );
@@ -168,7 +168,7 @@ function runTests() {
               const req = new Request(fullUrl, requestOptions);
 
               const response = await chain
-                .handle(req)
+                .handle<Response>(req)
                 .catch(catchError);
 
               await assert(
@@ -204,7 +204,7 @@ async function assert(
       `AcceptHeader test failed in ${system}:`,
       `\n  Response body does not match expected.`,
       `\nSee test case index [${testCaseIndex}] request index [${requestIndex}] containing:`,
-      `\n  ${request.method} ${request.url.replace(url, '')}`,
+      `\n  ${request.method} ${request.url.replace(url, "")}`,
     ),
   );
 
@@ -215,7 +215,7 @@ async function assert(
       `AcceptHeader test failed in ${system}:`,
       `\n  Response status does not match expected.`,
       `\nSee test case index [${testCaseIndex}] request index [${requestIndex}] containing:`,
-      `\n  ${request.method} ${request.url.replace(url, '')}`,
+      `\n  ${request.method} ${request.url.replace(url, "")}`,
     ),
   );
 
@@ -226,7 +226,7 @@ async function assert(
       `AcceptHeader test failed in ${system}:`,
       `\n  Response statusText does not match expected.`,
       `\nSee test case index [${testCaseIndex}] request index [${requestIndex}] containing:`,
-      `\n  ${request.method} ${request.url.replace(url, '')}`,
+      `\n  ${request.method} ${request.url.replace(url, "")}`,
     ),
   );
 }
@@ -287,8 +287,8 @@ function getTestCases(): TestCase[] {
             method: Method.POST,
             path: "/accept-header",
             headers: {
-              accept: 'application/json',
-            }
+              accept: "application/json",
+            },
           },
           expected_response: {
             status: 200,
@@ -301,43 +301,43 @@ function getTestCases(): TestCase[] {
             method: Method.PUT,
             path: "/accept-header",
             headers: {
-              accept: "*/*"
-            }
+              accept: "*/*",
+            },
           },
           expected_response: {
             status: 501,
             statusText: "Not Implemented",
             body: "Not Implemented",
-          }
+          },
         },
         {
           request: {
             method: Method.DELETE,
             path: "/accept-header",
             headers: {
-              accept: '*/*',
-            }
+              accept: "*/*",
+            },
           },
           expected_response: {
-              deno: {
-                status: 200,
-                statusText: "OK", // Deno magically sets this
-                body: "Deleted!",
-              },
-              drash: {
-                status: 200,
-                statusText: "", // No statusText was set in the resource, so we expect blank. We do not magically set it.
-                body: "Deleted!",
-              }
-            }
+            deno: {
+              status: 200,
+              statusText: "OK", // Deno magically sets this
+              body: "Deleted!",
+            },
+            drash: {
+              status: 200,
+              statusText: "", // No statusText was set in the resource, so we expect blank. We do not magically set it.
+              body: "Deleted!",
+            },
+          },
         },
         {
           request: {
             method: Method.PATCH,
             path: "/accept-header",
             headers: {
-              accept: '*/*',
-            }
+              accept: "*/*",
+            },
           },
           expected_response: {
             status: 405,
@@ -367,7 +367,6 @@ function getAcceptHeaderMiddleware(
     }
 
     ALL(request: Request): Promise<Response> {
-      console.log({ request });
       return Promise
         .resolve()
         .then(() => {
@@ -387,5 +386,5 @@ function getAcceptHeaderMiddleware(
           return r;
         });
     }
-  };
+  }();
 }

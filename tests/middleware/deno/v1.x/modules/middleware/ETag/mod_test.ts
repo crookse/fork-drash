@@ -22,6 +22,7 @@
 import { asserts } from "../../../../../../deps.ts";
 import {
   assertionMessage,
+  catchError,
   chain,
   query,
   testCaseName,
@@ -29,7 +30,6 @@ import {
 import { StatusCode } from "../../../../../../../src/core/http/response/StatusCode.ts";
 import { StatusDescription } from "../../../../../../../src/core/http/response/StatusDescription.ts";
 import { Method } from "../../../../../../../src/core/http/request/Method.ts";
-import { IHandler } from "../../../../../../../src/core/Interfaces.ts";
 import * as Chain from "../../../../../../../src/modules/RequestChain/mod.native.ts";
 import {
   defaultOptions,
@@ -37,9 +37,10 @@ import {
   ETagMiddleware,
   type Options,
 } from "../../../../../../../src/modules/middleware/ETag/mod.ts";
+import { Handler } from "../../../../../../../src/standard/handlers/Handler.ts";
 
 type TestCase = {
-  chain: IHandler<Request, Promise<Response>>;
+  chain: Handler;
   requests: {
     request: RequestInfo;
     expected_response: ExpectedCombined;
@@ -81,7 +82,7 @@ const url = `${protocol}://${hostname}:${port}`;
 // - send a 304 response if the hash exists.
 //
 const globals: {
-  current_chain: IHandler<Request, Promise<Response>> | null;
+  current_chain: Handler | null;
 } = {
   current_chain: null,
 };
@@ -100,7 +101,9 @@ Deno.serve(
       throw new Error(`Var \`globals.current_chain\` was not set by the test`);
     }
 
-    return globals.current_chain.handle(request);
+    return globals.current_chain
+      .handle<Response>(request)
+      .catch(catchError);
   },
 );
 
@@ -172,7 +175,7 @@ function runTests() {
 
               const req = new Request(fullUrl, requestOptions);
 
-              const response = await chain.handle(req);
+              const response = await chain.handle<Response>(req);
 
               await assert(
                 "Drash",
@@ -461,7 +464,6 @@ function getEtagMiddleware(
     }
 
     ALL(request: Request): Promise<Response> {
-      console.log({ request });
       return Promise
         .resolve()
         .then(() => this.next<Response>(request))
@@ -489,5 +491,5 @@ function getEtagMiddleware(
           return this.sendResponse(context);
         });
     }
-  };
+  }();
 }

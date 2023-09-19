@@ -4,7 +4,6 @@ import {
   ResponseStatus,
   ResponseStatusName,
 } from "../../../core/Types.ts";
-import { ResponseStatusCode } from "../../../core/types/ResponseStatusCode.ts";
 import { Method } from "../../../core/http/request/Method.ts";
 import { StatusCode } from "../../../core/http/response/StatusCode.ts";
 import { StatusDescription } from "../../../core/http/response/StatusDescription.ts";

@@ -19,7 +19,6 @@
  * Drash. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { IHandler } from "../../../../../../../src/core/Interfaces.ts";
 import { Method } from "../../../../../../../src/core/http/request/Method.ts";
 import { Status } from "../../../../../../../src/core/http/response/Status.ts";
 import {
@@ -28,12 +27,13 @@ import {
   defaultOptions,
   Options,
 } from "../../../../../../../src/modules/middleware/CORS/mod.ts";
+import { Handler } from "../../../../../../../src/standard/handlers/Handler.ts";
 import { asserts } from "../../../../../../deps.ts";
-import { query } from "../../../../utils.ts";
+import { catchError, query } from "../../../../utils.ts";
 import { assertionMessage, chain, testCaseName } from "../../../../utils.ts";
 
 type TestCase = {
-  chain: IHandler<Request, Promise<Response>>;
+  chain: Handler;
   requests: {
     request: RequestInfo;
     expected_response: ExpectedCombined;
@@ -65,7 +65,7 @@ const url = `${protocol}://${hostname}:${port}`;
 // chain
 //
 const globals: {
-  current_chain: IHandler<Request, Promise<Response>> | null;
+  current_chain: Handler | null;
 } = {
   current_chain: null,
 };
@@ -84,7 +84,9 @@ Deno.serve(
       throw new Error(`Var \`globals.current_chain\` was not set by the test`);
     }
 
-    return globals.current_chain.handle(request);
+    return globals.current_chain
+      .handle<Response>(request)
+      .catch(catchError);
   },
 );
 
@@ -156,7 +158,7 @@ function runTests() {
 
               const req = new Request(fullUrl, requestOptions);
 
-              const response = await chain.handle(req);
+              const response = await chain.handle<Response>(req);
 
               await assert(
                 "Drash",
@@ -1227,12 +1229,11 @@ function getCorsMiddleware(
     }
 
     ALL(request: Request): Response {
-      console.log({ request });
       return super.ALL(request);
     }
 
     OPTIONS(request: Request) {
       return super.OPTIONS(request);
     }
-  };
+  }();
 }

@@ -100,7 +100,7 @@ export function query(kvp?: Record<string, string>) {
  * })
  *
  * const req = new Request("/some-path"), reqOptions);
- * const res = await myChain.handle(req); // => a `Response` object
+ * const res = await myChain.handle<Response>(req); // => a `Response` object
  * ```
  */
 export function chain(options: {
@@ -130,5 +130,5 @@ export function chain(options: {
         .middleware(...middleware)
         .build(),
     )
-    .build<Request, Response>();
+    .build();
 }
