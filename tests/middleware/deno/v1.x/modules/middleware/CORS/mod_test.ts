@@ -1221,7 +1221,7 @@ function getCorsMiddleware(
     return CORS(options);
   }
 
-  return class CORSLogged extends CORSMiddleware {
+  return new class CORSLogged extends CORSMiddleware {
     constructor() {
       super(options);
     }

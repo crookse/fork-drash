@@ -361,7 +361,7 @@ function getAcceptHeaderMiddleware(
     return AcceptHeader(options);
   }
 
-  return class AcceptHeaderLogged extends AcceptHeaderMiddleware {
+  return new class AcceptHeaderLogged extends AcceptHeaderMiddleware {
     constructor() {
       super(options);
     }

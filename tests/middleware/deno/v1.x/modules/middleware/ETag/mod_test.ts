@@ -140,7 +140,9 @@ function runTests() {
                 req,
                 requestIndex,
                 response,
-                expected_response,
+                ("deno" in expected_response)
+                  ? expected_response.deno
+                  : expected_response,
               );
             },
           );
@@ -178,7 +180,9 @@ function runTests() {
                 req,
                 requestIndex,
                 response,
-                expected_response,
+                ("drash" in expected_response)
+                  ? expected_response.drash
+                  : expected_response,
               );
             },
           );
@@ -451,7 +455,7 @@ function getEtagMiddleware(
     return ETag(options);
   }
 
-  return class ETagLogged extends ETagMiddleware {
+  return new class ETagLogged extends ETagMiddleware {
     constructor() {
       super(options);
     }

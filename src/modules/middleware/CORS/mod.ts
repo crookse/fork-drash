@@ -363,11 +363,7 @@ class CORSMiddleware extends Middleware {
  * provided, it uses its default options.
  */
 function CORS(options: Options = defaultOptions) {
-  return class DefaultCORS extends CORSMiddleware {
-    constructor() {
-      super(options);
-    }
-  };
+  return new CORSMiddleware(options);
 }
 
 // FILE MARKER - PUBLIC API ////////////////////////////////////////////////////

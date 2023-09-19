@@ -19,19 +19,19 @@
  * Drash. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { IRequestMethods, IResource } from "../../core/Interfaces.ts";
 import { MethodOf } from "../../core/Types.ts";
 import { HTTPError } from "../../core/errors/HTTPError.ts";
+import { Resource } from "../../core/http/Resource.ts";
 import { Status } from "../../core/http/response/Status.ts";
 
 // Imports > Core
 
 // Imports > Standard
 
-class Middleware implements IRequestMethods {
-  protected original?: IRequestMethods;
+class Middleware extends Resource {
+  public original?: Resource;
 
-  public setOriginal(original: IRequestMethods) {
+  public setOriginal(original: Resource) {
     this.original = original;
   }
 
@@ -44,12 +44,12 @@ class Middleware implements IRequestMethods {
       !this.original ||
       (typeof this.original !== "object") ||
       !(input.method in this.original) ||
-      (typeof this.original[input.method as MethodOf<IResource>]) !== "function"
+      (typeof this.original[input.method as MethodOf<Resource>]) !== "function"
     ) {
       throw new Error("Middleware could not process request further");
     }
 
-    const method = input.method as MethodOf<IRequestMethods>;
+    const method = input.method as MethodOf<Resource>;
 
     const response = this.original[method](input);
 
