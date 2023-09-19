@@ -42,7 +42,7 @@ type TestCase = {
   chain: IHandler<Request, Promise<Response>>;
   requests: {
     request: RequestInfo;
-    expected_response: Expected;
+    expected_response: ExpectedCombined;
   }[];
 };
 
@@ -59,6 +59,8 @@ type Expected =
     body: unknown;
     headers?: Record<string, string>;
   };
+
+type ExpectedCombined = Expected | { deno: Expected; drash: Expected };
 
 const protocol = "http";
 const hostname = "localhost";
