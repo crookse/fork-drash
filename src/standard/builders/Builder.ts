@@ -19,29 +19,9 @@
  * Drash. If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Imports > Standard
-import { WithParams } from "../../standard/handlers/RequestParamsParser.ts";
-
-// Imports > Modules
-import { RequestChain } from "../base/RequestChain.ts";
-
-type HttpRequest = WithParams;
-
+interface Builder<C> {
+  build(): C;
+}
 // FILE MARKER - PUBLIC API ////////////////////////////////////////////////////
 
-export { HTTPError } from "../../core/errors/HTTPError.ts";
-export { Resource } from "../../core/http/Resource.ts";
-export { Middleware } from "../../standard/http/Middleware.ts";
-export type { HttpRequest as Request };
-
-/**
- * Get the builder that builds an HTTP request chain.
- */
-export function builder() {
-  return RequestChain
-    .builder()
-    // @ts-ignore URLPattern is available when using the Deno extension, but we
-    // should not force using a the Deno extension just to accomodate the build
-    // process having this API. Therefore, it is ignored.
-    .urlPatternClass(URLPattern);
-}
+export type { Builder };

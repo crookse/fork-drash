@@ -121,4 +121,4 @@ class Params {
 
 // FILE MARKER - PUBLIC API ////////////////////////////////////////////////////
 
-export { type Input, type Output, RequestParamsParser };
+export { type Input, type Output, RequestParamsParser, type WithParams };
