@@ -29,6 +29,7 @@ export const Header = {
   AccessControlRequestHeaders: "Access-Control-Request-Headers",
   AccessControlRequestMethod: "Acces-Control-Request-Method",
   ContentLength: "Content-Length",
+  Date: "Date",
   ETag: "ETag",
   IfMatch: "If-Match",
   IfNoneMatch: "If-None-Match",
