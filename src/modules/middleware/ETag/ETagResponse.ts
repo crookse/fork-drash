@@ -36,8 +36,9 @@ type Options = {
  * - Generating an ETag hash
  */
 class ETagResponseBuilder extends ResponseBuilder {
+
   /** The response to decorate. */
-  #response: Response;
+  protected wrapped_response: Response;
 
   /** The options this decorator will use when processing the response. */
   #default_options: Options = {
@@ -52,7 +53,7 @@ class ETagResponseBuilder extends ResponseBuilder {
    */
   constructor(response: Response) {
     super();
-    this.#response = response;
+    this.wrapped_response = response;
   }
 
   /**
@@ -85,8 +86,7 @@ class ETagResponseBuilder extends ResponseBuilder {
     return this
       .hash(options.max_hash_length)
       .then((hash) => {
-        return this
-          .#response
+        return this.wrapped_response
           .clone()
           .text()
           .then((text) => text.length.toString(16))
@@ -110,7 +110,7 @@ class ETagResponseBuilder extends ResponseBuilder {
    * @returns A `Promise` with the hash as he resulting value.
    */
   protected hash(maxLength = 27) {
-    return this.#response
+    return this.wrapped_response
       .clone()
       .text()
       .then((text) => btoa(text.substring(0, maxLength)));

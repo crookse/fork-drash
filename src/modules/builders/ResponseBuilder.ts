@@ -53,9 +53,9 @@ import { Builder } from "../../standard/builders/Builder.ts";
  * ```
  */
 class ResponseBuilder implements Builder<Response> {
-  #body: BodyInit | null = null;
-  #headers = new Headers();
-  #response_init: ResponseInit = {
+  protected response_body: BodyInit | null = null;
+  protected response_headers = new Headers();
+  protected response_init: ResponseInit = {
     status: 200,
     statusText: "OK",
   };
@@ -70,7 +70,7 @@ class ResponseBuilder implements Builder<Response> {
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Response/body}
    */
   body(body: BodyInit | null) {
-    this.#body = body;
+    this.response_body = body;
     return this;
   }
 
@@ -87,7 +87,7 @@ class ResponseBuilder implements Builder<Response> {
    */
   headers(headers: Record<string, string>) {
     for (const [k, v] of Object.entries(headers)) {
-      this.#headers.set(k, v);
+      this.response_headers.set(k, v);
     }
 
     return this;
@@ -104,7 +104,7 @@ class ResponseBuilder implements Builder<Response> {
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Response/status}
    */
   status(status: number) {
-    this.#response_init.status = status;
+    this.response_init.status = status;
     return this;
   }
 
@@ -118,14 +118,14 @@ class ResponseBuilder implements Builder<Response> {
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Response/statusText}
    */
   statusText(statusText: string) {
-    this.#response_init.statusText = statusText;
+    this.response_init.statusText = statusText;
     return this;
   }
 
   build() {
-    return new Response(this.#body, {
-      ...this.#response_init,
-      headers: this.#headers,
+    return new Response(this.response_body, {
+      ...this.response_init,
+      headers: this.response_headers,
     });
   }
 }
