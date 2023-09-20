@@ -36,7 +36,6 @@ type Options = {
  * - Generating an ETag hash
  */
 class ETagResponseBuilder extends ResponseBuilder {
-
   /** The response to decorate. */
   protected wrapped_response: Response;
 
