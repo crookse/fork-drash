@@ -22,7 +22,7 @@
 import { Builder } from "../../standard/builders/Builder.ts";
 
 /**
- * A builder to help build a `Respone` object. This is useful if the response's
+ * A builder to help build a `Response` object. This is useful if the response's
  * data needs to be modified throughout a lifecycle, but not instantiated into a
  * `Response` object until required.
  *
@@ -122,6 +122,9 @@ class ResponseBuilder implements Builder<Response> {
     return this;
   }
 
+  /**
+   * @returns A `Response` object using the values set in this builder.
+   */
   build() {
     return new Response(this.response_body, {
       ...this.response_init,
