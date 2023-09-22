@@ -27,11 +27,11 @@ import { ResourceGroup } from "../../../src/standard/http/ResourceGroup.ts";
 
 export function assertionMessage(...message: string[]): string {
   return `\n\n
------------------- Test Error/Failure ------------------
+------------------------------ Test Error/Failure ------------------------------
 
 ${message.join("\n")}
 
---------------------------------------------------------`;
+--------------------------------------------------------------------------------`;
 }
 
 export function catchError(error: Error | HTTPError): Response {
