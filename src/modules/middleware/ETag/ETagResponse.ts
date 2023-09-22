@@ -30,7 +30,7 @@ type Options = {
 
 /**
  * A `Response` decorator that attaches the following behaviors:
- * 
+ *
  * - Response building
  * - ETag and ETag-related header setting
  * - Response body hashing
@@ -118,7 +118,7 @@ class ETagResponseBuilder extends ResponseBuilder {
 
 /**
  * Decorate the provided `response` with this module's decorator.
- * 
+ *
  * @param response The response to decorate.
  *
  * @returns The decorated response.
