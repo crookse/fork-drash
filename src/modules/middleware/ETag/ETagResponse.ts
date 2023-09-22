@@ -29,15 +29,15 @@ type Options = {
 };
 
 /**
- * A `Response` builder that decorates a `Response` object with the following
- * capabilities:
- *
- * - Adding ETag header
- * - Generating an ETag hash
+ * A `Response` decorator that attaches the following behaviors:
+ * 
+ * - Response building
+ * - ETag and ETag-related header setting
+ * - Response body hashing
  */
 class ETagResponseBuilder extends ResponseBuilder {
   /** The response to decorate. */
-  protected wrapped_response: Response;
+  protected decoratee: Response;
 
   /** The options this decorator will use when processing the response. */
   #default_options: Options = {
@@ -46,13 +46,13 @@ class ETagResponseBuilder extends ResponseBuilder {
   };
 
   /**
-   * Decorate a `Response` with ETag capabilities.
+   * Decorate a `Response` with X-RateLimit-* header capabilities.
    *
    * @param response The response to decorate.
    */
   constructor(response: Response) {
     super();
-    this.wrapped_response = response;
+    this.decoratee = response;
   }
 
   /**
@@ -85,7 +85,7 @@ class ETagResponseBuilder extends ResponseBuilder {
     return this
       .hash(options.max_hash_length)
       .then((hash) => {
-        return this.wrapped_response
+        return this.decoratee
           .clone()
           .text()
           .then((text) => text.length.toString(16))
@@ -108,8 +108,8 @@ class ETagResponseBuilder extends ResponseBuilder {
    *
    * @returns A `Promise` with the hash as he resulting value.
    */
-  protected hash(maxLength = 27) {
-    return this.wrapped_response
+  public hash(maxLength = 27) {
+    return this.decoratee
       .clone()
       .text()
       .then((text) => btoa(text.substring(0, maxLength)));
@@ -117,11 +117,11 @@ class ETagResponseBuilder extends ResponseBuilder {
 }
 
 /**
- * Get a {@link Response} builder decorated with ETag capabilities.
- *
+ * Decorate the provided `response` with this module's decorator.
+ * 
  * @param response The response to decorate.
  *
- * @returns A decorated `Response`.
+ * @returns The decorated response.
  */
 function response(response: Response) {
   return new ETagResponseBuilder(response);
