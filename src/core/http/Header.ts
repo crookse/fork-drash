@@ -29,10 +29,12 @@ export const Header = {
   AccessControlRequestHeaders: "Access-Control-Request-Headers",
   AccessControlRequestMethod: "Acces-Control-Request-Method",
   ContentLength: "Content-Length",
+  ContentType: "Content-Type",
   Date: "Date",
   ETag: "ETag",
   IfMatch: "If-Match",
   IfNoneMatch: "If-None-Match",
   LastModified: "Last-Modified",
+  RetryAfter: "Retry-After",
   Vary: "Vary",
 } as const;
